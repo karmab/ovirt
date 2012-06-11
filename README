@@ -1,0 +1,40 @@
+			README
+			======
+
+	    ovirt.py repository
+	    ------------------------------
+
+This script allows creation of ovirt/rhev-m virtual machines and registration in cobbler for autoinstall
+
+Requisites
+------------
+
+-ovirtsdk package
+-vsphere.ini file in your home directory or in same directory as program (look at sample for syntax)
+
+Contents
+--------
+
+    README.txt          		this file
+    ovirt.py				creates ( and deletes ) virtual machines in vcenter of several clients
+                                                            
+
+Typical uses
+---------
+     
+    CREATE VIRTUAL MACHINE V0100 BASED ON PROFILE BE64 FOR CLIENT BIGCOMPANY, PROVIDING IP FOR COBBLER
+    ovirt.py -ZC BIGCOMPANY -n V0100 -p BE6 -1 192.168.1.100 -2 192.168.10.100
+    
+    DELETE VIRTUAL MACHINE V0100 FROM CLIENT NYSE
+    ovirt.py -C NYSE -D V0100
+
+
+Problems?
+---------
+
+Send a mail to karimboumedhel@gmail.com or find it yourself !
+
+Ai seu te pego!
+
+karmab
+
