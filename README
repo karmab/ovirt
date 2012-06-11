@@ -16,7 +16,7 @@ Contents
 --------
 
     README.txt          		this file
-    ovirt.py				creates ( and deletes ) virtual machines in vcenter of several clients
+    ovirt.py				creates ( and deletes ) virtual machines in ovirt/rhev-m of several clients
                                                             
 
 Typical uses
