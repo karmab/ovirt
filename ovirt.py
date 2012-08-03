@@ -401,7 +401,9 @@ try:
   os._exit(1)
  clu=api.clusters.get(name=clu)
  storagedomain=api.storagedomains.get(name=storagedomain)
- api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank')))
+ #api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank')))
+ api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu))))
+ 
  #add nics
  api.vms.get(name).nics.add(params.NIC(name='nic1', network=params.Network(name=net1), interface=netinterface))
  if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='nic2', network=params.Network(name=net2), interface=netinterface))
@@ -493,11 +495,5 @@ if not nolaunch:
   time.sleep(5) 
  api.vms.get(name).start()
  print "VM %s started" % name
-
-#add guestid .not working at the moment...
-#if guestid:
-# ose=api.vms.get(name).get_os()
-# ose.set_type(guestid)
-# api.vms.get(name).update()
 
 sys.exit(0)
