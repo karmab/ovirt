@@ -10,7 +10,7 @@ Requisites
 ------------
 
 -ovirtsdk package
--vsphere.ini file in your home directory or in same directory as program (look at sample for syntax)
+-ovirt.ini file in your home directory or in same directory as program (look at sample for syntax)
 
 Contents
 --------
