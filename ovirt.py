@@ -159,10 +159,7 @@ if len(args)!=1 and new:
  print "Usage: %prog [options] vmname"
  sys.exit(1)
 
-if os.path.exists("ovirt.ini"):
- ovirtconffile="ovirt.ini"
-else:
- ovirtconffile=os.environ['HOME']+"/ovirt.ini"
+ovirtconffile=os.environ['HOME']+"/ovirt.ini"
 #parse ovirt client auth file
 if not os.path.exists(ovirtconffile):
  print "Missing %s in your  home directory.Check documentation" % ovirtconffile
@@ -240,10 +237,7 @@ except KeyError,e:
 
 #parse cobbler client auth file
 if cobbler and client:
- if os.path.exists("cobbler.ini"):
-  cobblerconffile="cobbler.ini"
- else:
-  cobblerconffile=os.environ['HOME']+"/cobbler.ini"
+ cobblerconffile=os.environ['HOME']+"/cobbler.ini"
  if not os.path.exists(cobblerconffile):
   print "Missing %s in your  home directory.Check documentation" % cobblerconffile
   sys.exit(1)
