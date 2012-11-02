@@ -439,6 +439,9 @@ if len(args) == 1 and not new:
   sys.exit(1)
  print "Name: %s" % vm.name
  print "UID: %s" % vm.get_id()
+#### for cdrom in vm.get_cdroms().list():
+####  #print dir(cdrom)
+####  print cdrom.get_file().get_storage_domain()
  if vm.os.kernel or vm.os.initrd or vm.os.cmdline:
   print "KERNEL: %s INITRD:%s CMDLINE:%s" % (vm.os.kernel,vm.os.initrd,vm.os.cmdline)
  print "Status: %s" % vm.status.state
