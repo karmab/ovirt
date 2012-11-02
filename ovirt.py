@@ -29,15 +29,19 @@ ERR_CLIENTNOPROFILE="You need to create an ini file for all clients with defined
 usage="script to create virtual machines on ovirt/rhev"
 version="1.2"
 parser = optparse.OptionParser("Usage: %prog [options] vmname")
+parser.add_option("-b", "--bad", dest="bad",action="store_true", help="If set,treat all actions as not for a linux guest,meaning net interfaces will be of type e1000 and disk of type ide.Necessary for windows or solaris guests")
 parser.add_option("-c", "--cpu", dest="numcpu", type="int", help="Specify Number of CPUS")
 parser.add_option("-f", "--diskformat", dest="diskformat", type="string", help="Specify Disk mode.Can be raw or cow")
+parser.add_option("-i", "--iso", dest="iso", type="string", help="Specify iso to add to VM")
+parser.add_option("-k", "--kernel", dest="kernel", type="string", help="Specify kernel to boot VM,using 3 values separated by semicolons(kernel,initrd,parameters)")
 parser.add_option("-l", "--listprofiles", dest="listprofiles", action="store_true", help="list available profiles")
 parser.add_option("-m", "--memory", dest="memory", type="int", help="Specify Memory, in Mo")
 parser.add_option("-n", "--new", dest="new",action="store_true", help="Create new VM")
-parser.add_option("-b", "--bad", dest="bad",action="store_true", help="If set,treat all actions as not for a linux guest,meaning net interfaces will be of type e1000 and disk of type ide.Necessary for windows or solaris guests")
+parser.add_option("-r", "--reset", dest="reset", action="store_true", help="Reset kernel parameters for given VM")
 parser.add_option("-p", "--profile", dest="profile",type="string", help="specify Profile")
 parser.add_option("-s", "--size", dest="disksize", type="int", help="Specify Disk size,in Go at VM creation")
 parser.add_option("-a", "--adddisk", dest="adddisk", type="int", help="Specify Disk size,in Go to add")
+parser.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by semicolons.Values can be hd,network,cdrom")
 parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
 parser.add_option("-D", "--storagedomain" , dest="storagedomain", type="string", help="Specify Domain")
 parser.add_option("-F", "--forcekill", dest="forcekill", action="store_true", help="Dont ask confirmation when killing a VM")
@@ -67,6 +71,9 @@ staticroutes=None
 backuproutes=None
 gwbackup=None
 clients=[]
+boot = options.boot
+kernel = options.kernel
+reset = options.reset
 client = options.client
 listclients = options.listclients
 listhosts = options.listhosts
@@ -100,6 +107,7 @@ profile = options.profile
 console = options.console
 installnet=None
 numinterfaces=options.numinterfaces
+iso=options.iso
 macaddr=[]
 guestrhel332="rhel_3"
 guestrhel364="rhel_3x64"
@@ -326,9 +334,12 @@ if info:
   print "Storage: %s Type: %s Total space: %sGb Available space:%sGb" % (s.name,s.get_type(),used+available,available)
  sys.exit(0)
 
-
 if len(args) == 1 and not new:
  name=args[0]
+ vm=api.vms.get(name=name)
+ if not vm:
+  print "VM %s not found.Leaving..." % name
+  sys.exit(1)
  if kill:
   if cobbler:
    s = xmlrpclib.Server("http://%s/cobbler_api" % cobblerhost)
@@ -340,10 +351,6 @@ if len(args) == 1 and not new:
     s.remove_system(name,token)
     s.sync(token)
     print "%s sucessfully killed in %s" % (name,cobblerhost)
-  vm=api.vms.get(name=name)
-  if not vm:
-   print "VM %s not found.Leaving..." % name
-   sys.exit(1)
   if not forcekill:
    sure=raw_input("Confirm you want to destroy VM %s:(y/N)" % name)
    if sure!="Y":
@@ -374,6 +381,48 @@ if len(args) == 1 and not new:
   api.vms.get(name).start() 
   print "VM %s restarted" % name
   sys.exit(0)
+ if iso:
+  isodomains=[]
+  for sd in api.storagedomains.list():
+   if sd.get_type()=="iso":isodomains.append(sd)
+  if len(isodomains)==0:
+   print "No iso domain found.Leaving..."
+   sys.exit(1)
+  print "will add iso %s to %s" % (iso,name)
+  sys.exit(0)
+ if boot:
+  boot=boot.split(",")
+  if len(boot) !=2:
+   print "You must provide 2 boot options separated by commas"
+   sys.exit(1)
+  boot1,boot2=boot[0],boot[1]
+  if boot1==boot2:
+   print "Same boot options provided"
+   sys.exit(1)
+  if boot1 not in ["hd","cdrom","network"] or boot2 not in ["hd","cdrom","network"]:
+   print "incorrect boot options provided.Leaving..."
+   sys.exit(1)
+  boot1 = params.Boot(dev=boot1)
+  boot2 = params.Boot(dev=boot2)
+  vm.os.boot = [ boot1, boot2 ]
+  print "boot options correctly changed for %s" % (name)
+  vm.update()
+  sys.exit(0)
+ if reset:
+  vm.os.kernel,vm.os.initrd,vm.os.cmdline="","",""
+  vm.update()
+  print "kernel options resetted for %s" % (name)
+  sys.exit(0)
+ if kernel: 
+  kernel=kernel.split(",")
+  if len(kernel) !=3:
+   print "You must provide 3 kernel options separated by commas."
+   sys.exit(1)
+  vm.os.kernel,vm.os.initrd,vm.os.cmdline=kernel[0],kernel[1],kernel[2]
+  #print dir(vm.os)
+  vm.update()
+  print "kernel options correctly changed for %s" % (name)
+  sys.exit(0)
  if adddisk:
   #clu=api.clusters.get(name=clu)
   if not storagedomain:
@@ -390,6 +439,8 @@ if len(args) == 1 and not new:
   sys.exit(1)
  print "Name: %s" % vm.name
  print "UID: %s" % vm.get_id()
+ if vm.os.kernel or vm.os.initrd or vm.os.cmdline:
+  print "KERNEL: %s INITRD:%s CMDLINE:%s" % (vm.os.kernel,vm.os.initrd,vm.os.cmdline)
  print "Status: %s" % vm.status.state
  print "OS: %s" % vm.get_os().get_type()
  if vm.status.state=="up":
