@@ -1,6 +1,7 @@
 #!/usr/bin/python
 """
 script to create virtual machines on ovirt/rhev
+used some samples from https://access.redhat.com/knowledge/docs/en-US/Red_Hat_Enterprise_Virtualization/3.1-Beta/html/Developer_Guide/Example_Attaching_an_ISO_Image_to_a_Virtual_Machine_using_Python.html
 """
 
 import sys
@@ -31,6 +32,7 @@ version="1.2"
 parser = optparse.OptionParser("Usage: %prog [options] vmname")
 parser.add_option("-b", "--bad", dest="bad",action="store_true", help="If set,treat all actions as not for a linux guest,meaning net interfaces will be of type e1000 and disk of type ide.Necessary for windows or solaris guests")
 parser.add_option("-c", "--cpu", dest="numcpu", type="int", help="Specify Number of CPUS")
+parser.add_option("-d", "--details", dest="details", action="store_true", help="Details about ovirt")
 parser.add_option("-f", "--diskformat", dest="diskformat", type="string", help="Specify Disk mode.Can be raw or cow")
 parser.add_option("-i", "--iso", dest="iso", type="string", help="Specify iso to add to VM")
 parser.add_option("-k", "--kernel", dest="kernel", type="string", help="Specify kernel to boot VM,using 3 values separated by semicolons(kernel,initrd,parameters)")
@@ -47,8 +49,8 @@ parser.add_option("-D", "--storagedomain" , dest="storagedomain", type="string",
 parser.add_option("-F", "--forcekill", dest="forcekill", action="store_true", help="Dont ask confirmation when killing a VM")
 parser.add_option("-K", "--kill", dest="kill", action="store_true" , help="specify VM to kill in virtual center.Confirmation will be asked unless -F/--forcekill flag is set.VM will also be killed in cobbler server if -Z/-cobbler flag set")
 parser.add_option("-E", "--cluster", dest="clu", type="string", help="Specify Cluster")
-parser.add_option("-H", "--listhosts", dest="listhosts", action="store_true", help="list hosts")
-parser.add_option("-I", "--info", dest="info", action="store_true", help="Info about ovirt")
+parser.add_option("-H", "--listhosts", dest="listhosts", action="store_true", help="List hosts")
+parser.add_option("-I", "--listisos", dest="listisos", action="store_true", help="List isos")
 parser.add_option("-L", "--listclients", dest="listclients", action="store_true", help="list available clients")
 parser.add_option("-M", "--listvms", dest="listvms", action="store_true", help="list all vms")
 parser.add_option("-R", "--restart", dest="restart", action="store_true", help="Restart vm")
@@ -76,6 +78,7 @@ kernel = options.kernel
 reset = options.reset
 client = options.client
 listclients = options.listclients
+listisos = options.listisos
 listhosts = options.listhosts
 listvms = options.listvms
 listprofiles = options.listprofiles
@@ -91,7 +94,7 @@ memory = options.memory
 restart=options.restart
 start=options.start
 stop=options.stop
-info=options.info
+details=options.details
 numcpu = options.numcpu
 thin=options.thin
 kill=options.kill
@@ -275,6 +278,21 @@ if listvms:
  for vm in api.vms.list():print vm.get_name()
  sys.exit(0)
 
+if listisos:
+ isodomains=[]
+ for sd in api.storagedomains.list():
+  if sd.get_type()=="iso":isodomains.append(sd)
+ if len(isodomains)==0:
+  print "No iso domain found.Leaving..."
+  sys.exit(1)
+ for sd in isodomains:
+  print "Isodomain: %s" % (sd.get_name())
+  print "Available isos:"
+  for f in sd.files.list():
+   print f.get_id()
+ sys.exit(0)
+
+
 
 #LIST HOSTS
 if listhosts:
@@ -310,7 +328,7 @@ if search:
  sys.exit(0)
 
 #REPORT 
-if info:
+if details:
  clusters=api.clusters.list()
  clusters=api.clusters.list()
  datacenters=api.datacenters.list()
@@ -382,13 +400,25 @@ if len(args) == 1 and not new:
   print "VM %s restarted" % name
   sys.exit(0)
  if iso:
+  isofound=False
   isodomains=[]
   for sd in api.storagedomains.list():
    if sd.get_type()=="iso":isodomains.append(sd)
   if len(isodomains)==0:
    print "No iso domain found.Leaving..."
    sys.exit(1)
-  print "will add iso %s to %s" % (iso,name)
+  for sd in isodomains:
+   for f in sd.files.list():
+    if f.get_id()==iso: 
+     isofound=True
+     cdrom=params.CdRom(vm=vm,file=f)
+     vm.cdroms.add(cdrom)
+     vm.update()
+     print "Added iso %s from Isodomain %s" % (iso,sd.get_name())
+     sys.exit(0)
+  if not isofound:
+   print "Iso not available.Leaving..."
+   sys.exit(1)
   sys.exit(0)
  if boot:
   boot=boot.split(",")
@@ -439,9 +469,11 @@ if len(args) == 1 and not new:
   sys.exit(1)
  print "Name: %s" % vm.name
  print "UID: %s" % vm.get_id()
-#### for cdrom in vm.get_cdroms().list():
-####  #print dir(cdrom)
-####  print cdrom.get_file().get_storage_domain()
+ print "BOOT1: %s" % (vm.os.boot[0].get_dev())
+ if len(vm.os.boot)==2:
+  print "BOOT2: %s" % (vm.os.boot[1].get_dev())
+ for cdrom in vm.get_cdroms().list():
+  if cdrom.get_file():print "CDROM: %s" % cdrom.get_file().get_id()
  if vm.os.kernel or vm.os.initrd or vm.os.cmdline:
   print "KERNEL: %s INITRD:%s CMDLINE:%s" % (vm.os.kernel,vm.os.initrd,vm.os.cmdline)
  print "Status: %s" % vm.status.state
