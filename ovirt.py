@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-script to create virtual machines on Ovirt
+script to create virtual machines on ovirt/rhev
 """
 
 import sys
@@ -26,8 +26,8 @@ ERR_CLIENTNOTFOUND="Client not found"
 ERR_CLIENTNOCONF="Client not found in conf file"
 ERR_CLIENTNOPROFILE="You need to create an ini file for all clients with defined profiles.Check documentation"
 
-usage="script to create virtual machines on Ovirt"
-version="1.1"
+usage="script to create virtual machines on ovirt/rhev"
+version="1.2"
 parser = optparse.OptionParser("Usage: %prog [options] vmname")
 parser.add_option("-c", "--cpu", dest="numcpu", type="int", help="Specify Number of CPUS")
 parser.add_option("-f", "--diskformat", dest="diskformat", type="string", help="Specify Disk mode.Can be raw or cow")
