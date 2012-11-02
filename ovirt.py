@@ -15,7 +15,7 @@ from ovirtsdk.xml import params
 __author__ = "Karim Boumedhel"
 __credits__ = ["Karim Boumedhel"]
 __license__ = "GPL"
-__version__ = "1.0"
+__version__ = "1.1"
 __maintainer__ = "Karim Boumedhel"
 __email__ = "karim.boumedhel@gmail.com"
 __status__ = "Production"
@@ -27,7 +27,7 @@ ERR_CLIENTNOCONF="Client not found in conf file"
 ERR_CLIENTNOPROFILE="You need to create an ini file for all clients with defined profiles.Check documentation"
 
 usage="script to create virtual machines on Ovirt"
-version="1.0"
+version="1.1"
 parser = optparse.OptionParser("Usage: %prog [options] vmname")
 parser.add_option("-c", "--cpu", dest="numcpu", type="int", help="Specify Number of CPUS")
 parser.add_option("-f", "--diskformat", dest="diskformat", type="string", help="Specify Disk mode.Can be raw or cow")
@@ -44,9 +44,10 @@ parser.add_option("-F", "--forcekill", dest="forcekill", action="store_true", he
 parser.add_option("-K", "--kill", dest="kill", action="store_true" , help="specify VM to kill in virtual center.Confirmation will be asked unless -F/--forcekill flag is set.VM will also be killed in cobbler server if -Z/-cobbler flag set")
 parser.add_option("-E", "--cluster", dest="clu", type="string", help="Specify Cluster")
 parser.add_option("-H", "--listhosts", dest="listhosts", action="store_true", help="list hosts")
+parser.add_option("-I", "--info", dest="info", action="store_true", help="Info about ovirt")
 parser.add_option("-L", "--listclients", dest="listclients", action="store_true", help="list available clients")
 parser.add_option("-M", "--listvms", dest="listvms", action="store_true", help="list all vms")
-parser.add_option("-R", "--report", dest="report", action="store_true", help="Report about ovirt")
+parser.add_option("-R", "--restart", dest="restart", action="store_true", help="Restart vm")
 parser.add_option("-S", "--start", dest="start", action="store_true", help="Start VM")
 parser.add_option("-T", "--thin", dest="thin", action="store_true", help="Use thin provisioning for disk")
 parser.add_option("-W", "--stop", dest="stop", action="store_true", help="Stop VM")
@@ -80,9 +81,10 @@ ip1=options.ip1
 ip2=options.ip2
 ip3=options.ip3
 memory = options.memory
+restart=options.restart
 start=options.start
 stop=options.stop
-report=options.report
+info=options.info
 numcpu = options.numcpu
 thin=options.thin
 kill=options.kill
@@ -134,7 +136,7 @@ def getip(api,id):
   if h.get_id()==id:return h.get_address()
 
 if adddisk:adddisk=adddisk*GB
-ohost,oport,ouser,opassword,ossl,oca,org=None,None,None,None,None,None,None
+ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
 #thin provisioning
 sparse=True
 if bad:
@@ -300,7 +302,7 @@ if search:
  sys.exit(0)
 
 #REPORT 
-if report:
+if info:
  clusters=api.clusters.list()
  clusters=api.clusters.list()
  datacenters=api.datacenters.list()
@@ -367,6 +369,11 @@ if len(args) == 1 and not new:
   api.vms.get(name).stop() 
   print "VM %s stopped" % name
   sys.exit(0)
+ if restart:
+  if api.vms.get(name).status.state!="down":api.vms.get(name).stop() 
+  api.vms.get(name).start() 
+  print "VM %s restarted" % name
+  sys.exit(0)
  if adddisk:
   #clu=api.clusters.get(name=clu)
   if not storagedomain:
@@ -382,21 +389,27 @@ if len(args) == 1 and not new:
   print "VM %s not found.Leaving..." % name
   sys.exit(1)
  print "Name: %s" % vm.name
+ print "UID: %s" % vm.get_id()
  print "Status: %s" % vm.status.state
  print "OS: %s" % vm.get_os().get_type()
- host=findhostbyid(api,vm.get_host().get_id())
- print "HOST: %s" % host
+ if vm.status.state=="up":
+  host=findhostbyid(api,vm.get_host().get_id())
+  print "HOST: %s" % host
  print "CPU: %s sockets:%s" % (vm.cpu.topology.cores,vm.cpu.topology.sockets)
  memory=vm.memory/1024/1024
  print "Memory: %dMb" % memory
  for disk in vm.disks.list():
+   #print disk.get_id()
    size=disk.size/1024/1024/1024
    print "diskname: %s disksize: %sGB diskformat: %s thin: %s" % (disk.name,size,disk.format,disk.sparse)
  for nic in vm.nics.list():
   print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,nic.network.id,nic.interface)
  if console:
+  if vm.status.state=="wait_for_launch" or vm.status.state=="down":
+   print "Cant connect to machine s console beeing in that state"
+   sys.exit(1)
   if not oca or not os.path.exists(oca):
-   print "a CA file is required in order to connect to console.Define one in ovirt.ini"
+   print "VDSM CA file is required in order to connect to console.Get it from /etc/pki/vdsm/cacert.pem and define its path in ovirt.ini"
    sys.exit(1)
   if not oorg:
    print "Define your org in ovirt.ini"
@@ -407,8 +420,8 @@ if len(args) == 1 and not new:
   id=vm.get_host().get_id()
   realaddress=getip(api,vm.get_host().get_id())
   subject="%s,CN=%s" % (oorg,realaddress)
-  print "Password:      %s" % ticket
-  os.popen("remote-viewer --spice-ca-file %s --spice-host-subject '%s' spice://%s/?port=%s\&tls-port=%s" %  (oca,subject,address,port,sport))
+  print "Password:	%s" % ticket
+  os.popen("remote-viewer --spice-ca-file %s --spice-host-subject '%s' spice://%s/?port=%s\&tls-port=%s &" %  (oca,subject,address,port,sport))
  sys.exit(0)
 
 #parse profile for specific client
@@ -433,7 +446,6 @@ if listprofiles:
  print "Use one of the availables profiles:"
  for profile in sorted(profiles.keys()): print profile
  sys.exit(0)
-
 
 if len(args) == 1:name=args[0]
 if not name:name=raw_input("enter machine s name:\n")
@@ -489,6 +501,7 @@ elif numinterfaces == 3:
 #VM CREATION IN OVIRT
 try:
 #TODO check that clu and storagedomain exist and that there is space there
+ if diskformat=="raw":sparse=False
  vm=api.vms.get(name=name)
  if vm:
   print "VM %s allready existing.Leaving..." % name
@@ -512,6 +525,7 @@ try:
 except:
  print "Failure creating VM"
  os._exit(1)
+
 
 #VM CREATION IN COBBLER
 #grab ips and extra routes for cobbler
