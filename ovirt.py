@@ -34,8 +34,9 @@ parser.add_option("-b", "--bad", dest="bad",action="store_true", help="If set,tr
 parser.add_option("-c", "--cpu", dest="numcpu", type="int", help="Specify Number of CPUS")
 parser.add_option("-d", "--details", dest="details", action="store_true", help="Details about ovirt")
 parser.add_option("-f", "--diskformat", dest="diskformat", type="string", help="Specify Disk mode.Can be raw or cow")
+parser.add_option("-g", "--guestid", dest="guestid", type="string", help="Change guestid of VM")
 parser.add_option("-i", "--iso", dest="iso", type="string", help="Specify iso to add to VM")
-parser.add_option("-k", "--kernel", dest="kernel", type="string", help="Specify kernel to boot VM,using 3 values separated by semicolons(kernel,initrd,parameters)")
+parser.add_option("-k", "--kernelinfo", dest="kernelinfo", type="string", help="Specify kernelinfo to boot VM,using 3 values separated by colons(kernel,initrd,parameters)")
 parser.add_option("-l", "--listprofiles", dest="listprofiles", action="store_true", help="list available profiles")
 parser.add_option("-m", "--memory", dest="memory", type="int", help="Specify Memory, in Mo")
 parser.add_option("-n", "--new", dest="new",action="store_true", help="Create new VM")
@@ -43,10 +44,10 @@ parser.add_option("-o", "--listtags", dest="listtags", action="store_true", help
 parser.add_option("-p", "--profile", dest="profile",type="string", help="specify Profile")
 parser.add_option("-r", "--reset", dest="reset", action="store_true", help="Reset kernel parameters for given VM")
 parser.add_option("-s", "--size", dest="disksize", type="int", help="Specify Disk size,in Go at VM creation")
-parser.add_option("-t", "--addtag", dest="addtag", type="string", help="Add tag to VM")
+parser.add_option("-t", "--tags", dest="tags", type="string", help="Add tags to VM")
 parser.add_option("-u", "--deletetag", dest="deletetag", type="string", help="Delete tag from VM")
 parser.add_option("-a", "--adddisk", dest="adddisk", type="int", help="Specify Disk size,in Go to add")
-parser.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by semicolons.Values can be hd,network,cdrom")
+parser.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom")
 parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
 parser.add_option("-D", "--storagedomain" , dest="storagedomain", type="string", help="Specify Domain")
 parser.add_option("-F", "--forcekill", dest="forcekill", action="store_true", help="Dont ask confirmation when killing a VM")
@@ -77,9 +78,10 @@ backuproutes=None
 gwbackup=None
 clients=[]
 boot = options.boot
-kernel = options.kernel
+kernelinfo = options.kernelinfo
 reset = options.reset
 client = options.client
+guestid = options.guestid
 listclients = options.listclients
 listisos = options.listisos
 listhosts = options.listhosts
@@ -112,9 +114,11 @@ search=options.search
 profile = options.profile
 console = options.console
 listtags = options.listtags
-addtag = options.addtag
+tags = options.tags
 deletetag = options.deletetag
 installnet=None
+boot1,boot2="hd","network"
+kernel,initrd,cdmline=None,None,None
 numinterfaces=options.numinterfaces
 iso=options.iso
 macaddr=[]
@@ -151,6 +155,23 @@ def getip(api,id):
  hosts=api.hosts
  for h in hosts.list():
   if h.get_id()==id:return h.get_address()
+
+
+def findiso(api,iso):
+ isofound=False
+ isodomains=[]
+ for sd in api.storagedomains.list():
+  if sd.get_type()=="iso":isodomains.append(sd)
+ if len(isodomains)==0:
+  print "No iso domain found.Leaving..."
+  sys.exit(1)
+ for sd in isodomains:
+  for f in sd.files.list():
+   if f.get_id()==iso:
+    isofound=True
+    return f
+ print "iso not found"
+ sys.exit(1)
 
 if adddisk:adddisk=adddisk*GB
 ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
@@ -447,37 +468,38 @@ if len(args) == 1 and not new:
   vm.update()
   print "kernel options resetted for %s" % (name)
   sys.exit(0)
- if kernel: 
-  kernel=kernel.split(",")
-  if len(kernel) !=3:
-   print "You must provide 3 kernel options separated by commas."
+ if kernelinfo: 
+  kernelinfo=kernelinfo.split(",")
+  if len(kernelinfo) !=3:
+   print "You must provide kernel,initrd and cmdline options separated by commas."
    sys.exit(1)
-  vm.os.kernel,vm.os.initrd,vm.os.cmdline=kernel[0],kernel[1],kernel[2]
-  #print dir(vm.os)
+  vm.os.kernel,vm.os.initrd,vm.os.cmdline=kernelinfo[0],kernelinfo[1],kernelinfo[2]
   vm.update()
   print "kernel options correctly changed for %s" % (name)
   sys.exit(0)
- if addtag:
-  tagfound=False
-  for tg  in api.tags.list():
-   if tg.get_name()==addtag:
-    tagfound=True
-    vm.tags.add(tg)
+ if tags:
+  tags=tag.split(",")
+  for tag in tags:
+   tagfound=False
+   for tg  in api.tags.list():
+    if tg.get_name()==tag:
+     tagfound=True
+     vm.tags.add(tg)
+     vm.update()
+     print "Tag %s added to %s" % (tag,name)
+     sys.exit(0)
+   if not tagfound:
+    print "Tag not available..."
+    sure=raw_input("Do you want me to create tag %s and add it to vm %s:(y/N)" % tag,name)
+    if sure!="Y":
+     print "Not doing anything"
+     sys.exit(1)
+    tag = params.Tag(name=tag)
+    api.tags.add(tag)
+    print "Tag %s added..." % (tag)
+    vm.tags.add(tag)
     vm.update()
-    print "Tag %s added to %s" % (addtag,name)
-    sys.exit(0)
-  if not tagfound:
-   print "Tag not available..."
-   sure=raw_input("Do you want me to create tag %s and add it to vm %s:(y/N)" % addtag,name)
-   if sure!="Y":
-    print "Not doing anything"
-    sys.exit(1)
-   tag = params.Tag(name=addtag)
-   api.tags.add(tag)
-   print "Tag %s added..." % (name)
-   vm.tags.add(tag)
-   vm.update()
-   print "Tag %s added to %s" % (addtag,name)
+    print "Tag %s added to %s" % (tag,name)
   sys.exit(0)
  if deletetag:
   tags=vm.tags.list()
@@ -485,6 +507,11 @@ if len(args) == 1 and not new:
    if tag.get_name()==deletetag: 
     tag.delete()
     print "Tag %s removed from %s" % (deletetag,name)
+  sys.exit(0)
+ if guestid:
+  vm.os.type_=guestid
+  vm.update()
+  print "Guestid set to %s for %s" % (guestid,name)
   sys.exit(0)
  if adddisk:
   #clu=api.clusters.get(name=clu)
@@ -591,9 +618,15 @@ if not profiles.has_key(profile):
 
 #grab all conf from profile 
 clu=profiles[profile]['clu']
-if profiles[profile].has_key("guestid"):guestid=profiles[profile]['guestid']
+if not guestid and profiles[profile].has_key("guestid"):guestid=profiles[profile]['guestid']
 if profiles[profile].has_key("numinterfaces"):numinterfaces=int(profiles[profile]['numinterfaces'])
-
+if profiles[profile].has_key("boot1"):boot1=profiles[profile]['boot1']
+if profiles[profile].has_key("boot2"):boot2=profiles[profile]['boot2']
+if profiles[profile].has_key("iso"):iso=profiles[profile]['iso']
+if not tags and profiles[profile].has_key("tags"):tags=profiles[profile]['tags']
+if not kernel and profiles[profile].has_key("kernel"):kernel=profiles[profile]['kernel']
+if not initrd and profiles[profile].has_key("initrd"):initrd=profiles[profile]['initrd']
+if not cmdline and profiles[profile].has_key("cmdline"):cmdline=profiles[profile]['cmdline']
 #grab nets 
 if numinterfaces == 1:
  net1=profiles[profile]['net1']
@@ -629,14 +662,28 @@ try:
   os._exit(1)
  clu=api.clusters.get(name=clu)
  storagedomain=api.storagedomains.get(name=storagedomain)
- #api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank')))
- api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu))))
+ #boot order
+ boot=[params.Boot(dev=boot1),params.Boot(dev=boot2)]
+ #vm creation
+ api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu))))
  #add nics
  api.vms.get(name).nics.add(params.NIC(name='nic1', network=params.Network(name=net1), interface=netinterface))
  if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='nic2', network=params.Network(name=net2), interface=netinterface))
  if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='nic3', network=params.Network(name=net3), interface=netinterface))
  #add disks
- api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True))
+ #api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True))
+ if iso:
+  iso=findiso(api,iso)
+  cdrom=params.CdRom(file=iso)
+  api.vms.get(name).cdroms.add(cdrom)
+ if tags:
+  tags=tags.split(",")
+  for tag in tags: 
+   for tg  in api.tags.list():
+    if tg.get_name()==tag:
+     tagfound=True
+     api.vms.get(name).tags.add(tg)
+ api.vms.get(name).update()
  print "VM %s created" % name
  if cobbler:
   #retrieve MACS for cobbler
@@ -723,11 +770,5 @@ if not nolaunch:
   time.sleep(5) 
  api.vms.get(name).start()
  print "VM %s started" % name
-
-#add guestid .not working at the moment...
-#if guestid:
-# ose=api.vms.get(name).get_os()
-# ose.set_type(guestid)
-# api.vms.get(name).update()
 
 sys.exit(0)
