@@ -39,9 +39,12 @@ parser.add_option("-k", "--kernel", dest="kernel", type="string", help="Specify 
 parser.add_option("-l", "--listprofiles", dest="listprofiles", action="store_true", help="list available profiles")
 parser.add_option("-m", "--memory", dest="memory", type="int", help="Specify Memory, in Mo")
 parser.add_option("-n", "--new", dest="new",action="store_true", help="Create new VM")
-parser.add_option("-r", "--reset", dest="reset", action="store_true", help="Reset kernel parameters for given VM")
+parser.add_option("-o", "--listtags", dest="listtags", action="store_true", help="List available tags")
 parser.add_option("-p", "--profile", dest="profile",type="string", help="specify Profile")
+parser.add_option("-r", "--reset", dest="reset", action="store_true", help="Reset kernel parameters for given VM")
 parser.add_option("-s", "--size", dest="disksize", type="int", help="Specify Disk size,in Go at VM creation")
+parser.add_option("-t", "--addtag", dest="addtag", type="string", help="Add tag to VM")
+parser.add_option("-u", "--deletetag", dest="deletetag", type="string", help="Delete tag from VM")
 parser.add_option("-a", "--adddisk", dest="adddisk", type="int", help="Specify Disk size,in Go to add")
 parser.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by semicolons.Values can be hd,network,cdrom")
 parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
@@ -108,6 +111,9 @@ nolaunch=options.nolaunch
 search=options.search
 profile = options.profile
 console = options.console
+listtags = options.listtags
+addtag = options.addtag
+deletetag = options.deletetag
 installnet=None
 numinterfaces=options.numinterfaces
 iso=options.iso
@@ -286,6 +292,10 @@ if listisos:
    print f.get_id()
  sys.exit(0)
 
+if listtags:
+ for tag  in api.tags.list():
+  print "TAG: %s" % tag.get_name()
+ sys.exit(0)
 
 
 #LIST HOSTS
@@ -447,6 +457,26 @@ if len(args) == 1 and not new:
   vm.update()
   print "kernel options correctly changed for %s" % (name)
   sys.exit(0)
+ if addtag:
+  tagfound=False
+  for tg  in api.tags.list():
+   if tg.get_name()==addtag:
+    tagfound=True
+    vm.tags.add(tg)
+    vm.update()
+    print "Tag %s added to %s" % (addtag,name)
+    sys.exit(0)
+  if not tagfound:
+   print "Tag not available.Leaving..."
+   sys.exit(1)
+  sys.exit(0)
+ if deletetag:
+  tags=vm.tags.list()
+  for tag in tags:
+   if tag.get_name()==deletetag: 
+    tag.delete()
+    print "Tag %s removed from %s" % (deletetag,name)
+  sys.exit(0)
  if adddisk:
   #clu=api.clusters.get(name=clu)
   if not storagedomain:
@@ -462,20 +492,20 @@ if len(args) == 1 and not new:
   print "VM %s not found.Leaving..." % name
   sys.exit(1)
  print "Name: %s" % vm.name
- print "UID: %s" % vm.get_id()
- print "BOOT1: %s" % (vm.os.boot[0].get_dev())
+ print "Uid: %s" % vm.get_id()
+ print "Boot1: %s" % (vm.os.boot[0].get_dev())
  if len(vm.os.boot)==2:
-  print "BOOT2: %s" % (vm.os.boot[1].get_dev())
+  print "Boot2: %s" % (vm.os.boot[1].get_dev())
  for cdrom in vm.get_cdroms().list():
-  if cdrom.get_file():print "CDROM: %s" % cdrom.get_file().get_id()
+  if cdrom.get_file():print "Cdrom: %s" % cdrom.get_file().get_id()
  if vm.os.kernel or vm.os.initrd or vm.os.cmdline:
-  print "KERNEL: %s INITRD:%s CMDLINE:%s" % (vm.os.kernel,vm.os.initrd,vm.os.cmdline)
+  print "Kernel: %s Initrd:%s Cmdline:%s" % (vm.os.kernel,vm.os.initrd,vm.os.cmdline)
  print "Status: %s" % vm.status.state
- print "OS: %s" % vm.get_os().get_type()
+ print "Os: %s" % vm.get_os().get_type()
  if vm.status.state=="up":
   host=findhostbyid(api,vm.get_host().get_id())
-  print "HOST: %s" % host
- print "CPU: %s sockets:%s" % (vm.cpu.topology.cores,vm.cpu.topology.sockets)
+  print "Host: %s" % host
+ print "Cpu: %s sockets:%s" % (vm.cpu.topology.cores,vm.cpu.topology.sockets)
  memory=vm.memory/1024/1024
  print "Memory: %dMb" % memory
  for disk in vm.disks.list():
@@ -484,6 +514,8 @@ if len(args) == 1 and not new:
    print "diskname: %s disksize: %sGB diskformat: %s thin: %s" % (disk.name,size,disk.format,disk.sparse)
  for nic in vm.nics.list():
   print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,nic.network.id,nic.interface)
+ for tag in vm.get_tags().list():
+   print "Tags: %s" % tag.get_name()
  if console:
   if vm.status.state=="wait_for_launch" or vm.status.state=="down":
    print "Cant connect to machine s console beeing in that state"
