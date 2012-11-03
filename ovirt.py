@@ -467,8 +467,17 @@ if len(args) == 1 and not new:
     print "Tag %s added to %s" % (addtag,name)
     sys.exit(0)
   if not tagfound:
-   print "Tag not available.Leaving..."
-   sys.exit(1)
+   print "Tag not available..."
+   sure=raw_input("Do you want me to create tag %s and add it to vm %s:(y/N)" % addtag,name)
+   if sure!="Y":
+    print "Not doing anything"
+    sys.exit(1)
+   tag = params.Tag(name=addtag)
+   api.tags.add(tag)
+   print "Tag %s added..." % (name)
+   vm.tags.add(tag)
+   vm.update()
+   print "Tag %s added to %s" % (addtag,name)
   sys.exit(0)
  if deletetag:
   tags=vm.tags.list()
