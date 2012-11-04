@@ -411,17 +411,6 @@ if len(args) == 1 and not new:
    sys.exit(0)
   api.vms.get(name).stop() 
   print "VM %s stopped" % name
- if start: 
-  if api.vms.get(name).status.state=="up":
-   print "VM allready started"
-   sys.exit(0)
-  api.vms.get(name).start() 
-  print "VM %s started" % name
- if restart:
-  if api.vms.get(name).status.state!="down":api.vms.get(name).stop() 
-  api.vms.get(name).start() 
-  print "VM %s restarted" % name
-  sys.exit(0)
  if iso:
   isofound=False
   isodomains=[]
@@ -515,6 +504,25 @@ if len(args) == 1 and not new:
    storagedomain=api.storagedomains.get(name=storagedomain)
   api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=adddisk,type_="data",status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=False))
   print "Disk with size %d GB added" % (adddisk/1024/1024/1024)
+ if start: 
+  if api.vms.get(name).status.state=="up":
+   print "VM allready started"
+   sys.exit(0)
+  api.vms.get(name).start() 
+  print "VM %s started" % name
+ if restart:
+  if api.vms.get(name).status.state!="down":api.vms.get(name).stop() 
+  api.vms.get(name).start() 
+  print "VM %s restarted" % name
+ if iso:
+  isofound=False
+  isodomains=[]
+  for sd in api.storagedomains.list():
+   if sd.get_type()=="iso":isodomains.append(sd)
+  if len(isodomains)==0:
+   print "No iso domain found.Leaving..."
+   sys.exit(1)
+  for sd in isodomains:
  vm=api.vms.get(name=name)
  if not vm:
   print "VM %s not found.Leaving..." % name
