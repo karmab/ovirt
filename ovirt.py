@@ -405,20 +405,18 @@ if len(args) == 1 and not new:
   api.vms.get(name).delete() 
   print "VM %s killed" % name
   sys.exit(0)
- if start: 
-  if api.vms.get(name).status.state=="up":
-   print "VM allready started"
-   sys.exit(0)
-  api.vms.get(name).start() 
-  print "VM %s started" % name
-  sys.exit(0)
  if stop:
   if api.vms.get(name).status.state=="down":
    print "VM allready stopped"
    sys.exit(0)
   api.vms.get(name).stop() 
   print "VM %s stopped" % name
-  sys.exit(0)
+ if start: 
+  if api.vms.get(name).status.state=="up":
+   print "VM allready started"
+   sys.exit(0)
+  api.vms.get(name).start() 
+  print "VM %s started" % name
  if restart:
   if api.vms.get(name).status.state!="down":api.vms.get(name).stop() 
   api.vms.get(name).start() 
@@ -440,7 +438,6 @@ if len(args) == 1 and not new:
      vm.cdroms.add(cdrom)
      vm.update()
      print "Added iso %s from Isodomain %s" % (iso,sd.get_name())
-     sys.exit(0)
   if not isofound:
    print "Iso not available.Leaving..."
    sys.exit(1)
@@ -462,7 +459,6 @@ if len(args) == 1 and not new:
   vm.os.boot = [ boot1, boot2 ]
   print "boot options correctly changed for %s" % (name)
   vm.update()
-  sys.exit(0)
  if reset:
   vm.os.kernel,vm.os.initrd,vm.os.cmdline="","",""
   vm.update()
@@ -476,7 +472,6 @@ if len(args) == 1 and not new:
   vm.os.kernel,vm.os.initrd,vm.os.cmdline=kernelinfo[0],kernelinfo[1],kernelinfo[2]
   vm.update()
   print "kernel options correctly changed for %s" % (name)
-  sys.exit(0)
  if tags:
   tags=tag.split(",")
   for tag in tags:
@@ -500,14 +495,12 @@ if len(args) == 1 and not new:
     vm.tags.add(tag)
     vm.update()
     print "Tag %s added to %s" % (tag,name)
-  sys.exit(0)
  if deletetag:
   tags=vm.tags.list()
   for tag in tags:
    if tag.get_name()==deletetag: 
     tag.delete()
     print "Tag %s removed from %s" % (deletetag,name)
-  sys.exit(0)
  if guestid:
   vm.os.type_=guestid
   vm.update()
@@ -522,7 +515,6 @@ if len(args) == 1 and not new:
    storagedomain=api.storagedomains.get(name=storagedomain)
   api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=adddisk,type_="data",status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=False))
   print "Disk with size %d GB added" % (adddisk/1024/1024/1024)
-  _sys.exit(0)
  vm=api.vms.get(name=name)
  if not vm:
   print "VM %s not found.Leaving..." % name
