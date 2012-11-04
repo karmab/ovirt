@@ -108,7 +108,13 @@ for vm in vms:
   continue
  for tg in vm.get_tags().list():
   if tg.name==tag:
+   #delete tag
    tg.delete()
+   #remove kernel options
+   vm.os.kernel,vm.os.initrd,vm.os.cmdline="","",""
+   #ensure first boot is hd( and set second as cdrom
+   vm.os.boot = [ params.Boot(dev="hd"),params.Boot(dev="cdrom") ]
+   #launch vm
    vm.start()
    print "vm %s started" % vm.name
    launched=launched+1
