@@ -30,13 +30,14 @@ ERR_CLIENTNOPROFILE="You need to create an ini file for all clients with defined
 usage="script to create virtual machines on ovirt/rhev"
 version="1.2"
 parser = optparse.OptionParser("Usage: %prog [options] vmname")
+parser.add_option("-a", "--adddisk", dest="adddisk", type="int", help="Specify Disk size,in Go to add")
 parser.add_option("-b", "--bad", dest="bad",action="store_true", help="If set,treat all actions as not for a linux guest,meaning net interfaces will be of type e1000 and disk of type ide.Necessary for windows or solaris guests")
 parser.add_option("-c", "--cpu", dest="numcpu", type="int", help="Specify Number of CPUS")
-parser.add_option("-d", "--details", dest="details", action="store_true", help="Details about ovirt")
+parser.add_option("-d", "--discover", dest="discover", action="store_true", help="Discover your ovirt setup")
+parser.add_option("-e", "--extra", dest="extra", type="string", help="Extra parameters to add to cmdline")
 parser.add_option("-f", "--diskformat", dest="diskformat", type="string", help="Specify Disk mode.Can be raw or cow")
 parser.add_option("-g", "--guestid", dest="guestid", type="string", help="Change guestid of VM")
 parser.add_option("-i", "--iso", dest="iso", type="string", help="Specify iso to add to VM")
-parser.add_option("-k", "--kernelinfo", dest="kernelinfo", type="string", help="Specify kernelinfo to boot VM,using 3 values separated by colons(kernel,initrd,parameters)")
 parser.add_option("-l", "--listprofiles", dest="listprofiles", action="store_true", help="list available profiles")
 parser.add_option("-m", "--memory", dest="memory", type="int", help="Specify Memory, in Mo")
 parser.add_option("-n", "--new", dest="new",action="store_true", help="Create new VM")
@@ -46,7 +47,9 @@ parser.add_option("-r", "--reset", dest="reset", action="store_true", help="Rese
 parser.add_option("-s", "--size", dest="disksize", type="int", help="Specify Disk size,in Go at VM creation")
 parser.add_option("-t", "--tags", dest="tags", type="string", help="Add tags to VM")
 parser.add_option("-u", "--deletetag", dest="deletetag", type="string", help="Delete tag from VM")
-parser.add_option("-a", "--adddisk", dest="adddisk", type="int", help="Specify Disk size,in Go to add")
+parser.add_option("-x", "--kernel", dest="kernel", type="string", help="Specify kernel to boot VM")
+parser.add_option("-y", "--initrd", dest="initrd", type="string", help="Specify initrd to boot VM")
+parser.add_option("-z", "--cmdline", dest="cmdline", type="string", help="Specify cmdline to boot VM")
 parser.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom")
 parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
 parser.add_option("-D", "--storagedomain" , dest="storagedomain", type="string", help="Specify Domain")
@@ -78,7 +81,7 @@ backuproutes=None
 gwbackup=None
 clients=[]
 boot = options.boot
-kernelinfo = options.kernelinfo
+extra = options.extra
 reset = options.reset
 client = options.client
 guestid = options.guestid
@@ -95,11 +98,14 @@ disksize = options.disksize
 ip1=options.ip1
 ip2=options.ip2
 ip3=options.ip3
+kernel=options.kernel
+initrd=options.initrd
+cmdline=options.cmdline
 memory = options.memory
 restart=options.restart
 start=options.start
 stop=options.stop
-details=options.details
+discover=options.discover
 numcpu = options.numcpu
 thin=options.thin
 kill=options.kill
@@ -118,7 +124,6 @@ tags = options.tags
 deletetag = options.deletetag
 installnet=None
 boot1,boot2="hd","network"
-kernel,initrd,cmdline=None,None,None
 numinterfaces=options.numinterfaces
 iso=options.iso
 macaddr=[]
@@ -353,7 +358,7 @@ if search:
  sys.exit(0)
 
 #REPORT 
-if details:
+if discover:
  clusters=api.clusters.list()
  clusters=api.clusters.list()
  datacenters=api.datacenters.list()
@@ -452,15 +457,22 @@ if len(args) == 1 and not new:
   vm.os.kernel,vm.os.initrd,vm.os.cmdline="","",""
   vm.update()
   print "kernel options resetted for %s" % (name)
-  sys.exit(0)
- if kernelinfo: 
-  kernelinfo=kernelinfo.split(",")
-  if len(kernelinfo) !=3:
-   print "You must provide kernel,initrd and cmdline options separated by commas."
-   sys.exit(1)
-  vm.os.kernel,vm.os.initrd,vm.os.cmdline=kernelinfo[0],kernelinfo[1],kernelinfo[2]
+ if kernel: 
+  vm.os.kernel=kernel
   vm.update()
-  print "kernel options correctly changed for %s" % (name)
+  print "kernel correctly changed for %s" % (name)
+ if initrd:
+  vm.os.initrd=initrd
+  vm.update()
+  print "initrd correctly changed for %s" % (name)
+ if cmdline:
+  vm.os.cmdline=cmdline
+  vm.update()
+  print "cmdline correctly changed for %s" % (name)
+ if extra:
+  vm.os.cmdline="%s %s" % (vm.os.cmdline,extra)
+  vm.update()
+  print "extra cmdline correctly changed for %s" % (name)
  if tags:
   tags=tag.split(",")
   for tag in tags:
@@ -618,6 +630,7 @@ if not tags and profiles[profile].has_key("tags"):tags=profiles[profile]['tags']
 if not kernel and profiles[profile].has_key("kernel"):kernel=profiles[profile]['kernel']
 if not initrd and profiles[profile].has_key("initrd"):initrd=profiles[profile]['initrd']
 if not cmdline and profiles[profile].has_key("cmdline"):cmdline=profiles[profile]['cmdline']
+if extra:cmdline="%s %s" %(cmdline,extra)
 #grab nets 
 if numinterfaces == 1:
  net1=profiles[profile]['net1']
