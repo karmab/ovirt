@@ -514,15 +514,6 @@ if len(args) == 1 and not new:
   if api.vms.get(name).status.state!="down":api.vms.get(name).stop() 
   api.vms.get(name).start() 
   print "VM %s restarted" % name
- if iso:
-  isofound=False
-  isodomains=[]
-  for sd in api.storagedomains.list():
-   if sd.get_type()=="iso":isodomains.append(sd)
-  if len(isodomains)==0:
-   print "No iso domain found.Leaving..."
-   sys.exit(1)
-  for sd in isodomains:
  vm=api.vms.get(name=name)
  if not vm:
   print "VM %s not found.Leaving..." % name
