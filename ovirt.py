@@ -662,7 +662,7 @@ try:
  if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='nic2', network=params.Network(name=net2), interface=netinterface))
  if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='nic3', network=params.Network(name=net3), interface=netinterface))
  #add disks
- #api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True))
+ api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True))
  if iso:
   iso=findiso(api,iso)
   cdrom=params.CdRom(file=iso)
