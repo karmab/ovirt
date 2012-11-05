@@ -644,46 +644,46 @@ elif numinterfaces == 3:
 
 
 #VM CREATION IN OVIRT
-try:
+#try:
 #TODO check that clu and storagedomain exist and that there is space there
- if diskformat=="raw":sparse=False
- vm=api.vms.get(name=name)
- if vm:
-  print "VM %s allready existing.Leaving..." % name
-  os._exit(1)
- clu=api.clusters.get(name=clu)
- storagedomain=api.storagedomains.get(name=storagedomain)
- #boot order
- boot=[params.Boot(dev=boot1),params.Boot(dev=boot2)]
- #vm creation
- api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu))))
- #add nics
- api.vms.get(name).nics.add(params.NIC(name='nic1', network=params.Network(name=net1), interface=netinterface))
- if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='nic2', network=params.Network(name=net2), interface=netinterface))
- if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='nic3', network=params.Network(name=net3), interface=netinterface))
- #add disks
- api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True))
- if iso:
-  iso=findiso(api,iso)
-  cdrom=params.CdRom(file=iso)
-  api.vms.get(name).cdroms.add(cdrom)
- if tags:
-  tags=tags.split(",")
-  for tag in tags: 
-   for tg  in api.tags.list():
-    if tg.get_name()==tag:
-     tagfound=True
-     api.vms.get(name).tags.add(tg)
- api.vms.get(name).update()
- print "VM %s created" % name
- if cobbler:
-  #retrieve MACS for cobbler
-  vm=api.vms.get(name=name)
-  for nic in vm.nics.list():
-   macaddr.append(nic.mac.address)
-except:
- print "Failure creating VM"
+if diskformat=="raw":sparse=False
+vm=api.vms.get(name=name)
+if vm:
+ print "VM %s allready existing.Leaving..." % name
  os._exit(1)
+clu=api.clusters.get(name=clu)
+storagedomain=api.storagedomains.get(name=storagedomain)
+#boot order
+boot=[params.Boot(dev=boot1),params.Boot(dev=boot2)]
+#vm creation
+api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu))))
+#add nics
+api.vms.get(name).nics.add(params.NIC(name='nic1', network=params.Network(name=net1), interface=netinterface))
+if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='nic2', network=params.Network(name=net2), interface=netinterface))
+if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='nic3', network=params.Network(name=net3), interface=netinterface))
+if iso:
+ iso=findiso(api,iso)
+ cdrom=params.CdRom(file=iso)
+ api.vms.get(name).cdroms.add(cdrom)
+if tags:
+ tags=tags.split(",")
+ for tag in tags: 
+  for tg  in api.tags.list():
+   if tg.get_name()==tag:
+    tagfound=True
+    api.vms.get(name).tags.add(tg)
+api.vms.get(name).update()
+#add disks
+api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True))
+print "VM %s created" % name
+if cobbler:
+ #retrieve MACS for cobbler
+ vm=api.vms.get(name=name)
+ for nic in vm.nics.list():
+  macaddr.append(nic.mac.address)
+#except:
+# print "Failure creating VM"
+# os._exit(1)
 
 
 #VM CREATION IN COBBLER
