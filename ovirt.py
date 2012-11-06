@@ -548,9 +548,8 @@ if len(args) == 1 and not new:
  memory=vm.memory/1024/1024
  print "Memory: %dMb" % memory
  for disk in vm.disks.list():
-   #print disk.get_id()
    size=disk.size/1024/1024/1024
-   print "diskname: %s disksize: %sGB diskformat: %s thin: %s" % (disk.name,size,disk.format,disk.sparse)
+   print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state())
  for nic in vm.nics.list():
   print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,nic.network.id,nic.interface)
  for tag in vm.get_tags().list():
@@ -772,6 +771,11 @@ if not nolaunch:
  while api.vms.get(name).status.state =="image_locked":
   print "Waiting For image to be unlocked..."
   time.sleep(5) 
+ for disk in vm.disks.list():
+  while disk.get_status().get_state()=="Locked":
+   print "Waiting For one of the disks to be unlocked..."
+   time.sleep(5) 
+ #at this point,VM is ready to be started
  api.vms.get(name).start()
  print "VM %s started" % name
 
