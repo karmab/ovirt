@@ -553,7 +553,8 @@ if len(args) == 1 and not new:
    size=disk.size/1024/1024/1024
    print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state())
  for nic in vm.nics.list():
-  print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,nic.network.id,nic.interface)
+  net=api.networks.get(id=nic.network.id).get_name()
+  print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,net,nic.interface)
  for tag in vm.get_tags().list():
    print "Tags: %s" % tag.get_name()
  if console:
@@ -630,6 +631,7 @@ if profiles[profile].has_key("iso"):iso=profiles[profile]["iso"]
 if profiles[profile].has_key("storagedomain"):storagedomain=profiles[profile]["storagedomain"]
 if profiles[profile].has_key("netinterface"):netinterface=profiles[profile]["netinterface"]
 if profiles[profile].has_key("diskinterface"):netinterface=profiles[profile]["diskinterface"]
+if profiles.has_key("disksize"):disksize=int(profiles[profile]["disksize"])*GB
 if not guestid and profiles[profile].has_key("guestid"):guestid=profiles[profile]["guestid"]
 if not tags and profiles[profile].has_key("tags"):tags=profiles[profile]["tags"]
 if not kernel and profiles[profile].has_key("kernel"):kernel=profiles[profile]["kernel"]
