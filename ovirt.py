@@ -251,10 +251,12 @@ try:
  if ovirts[client].has_key("clu"):clu=ovirts[client]["clu"]
  if ovirts[client].has_key("numcpu"):numcpu=int(ovirts[client]["numcpu"])
  if ovirts[client].has_key("diskformat"):diskformat=ovirts[client]["diskformat"]
+ if ovirts[client].has_key("diskinterface"):diskinterface=ovirts[client]["diskformat"]
  if ovirts[client].has_key("disksize"):disksize=int(ovirts[client]["disksize"])*GB
  if ovirts[client].has_key("memory"):memory=int(ovirts[client]["memory"])*MB
  if ovirts[client].has_key("storagedomain"):storagedomain=ovirts[client]["storagedomain"]
  if ovirts[client].has_key("numinterfaces"):numinterfaces=int(ovirts[client]["numinterfaces"])
+ if ovirts[client].has_key("netinterface"):diskinterface=ovirts[client]["netinterface"]
  if ovirts[client].has_key("ssl"):ossl=True
  if ovirts[client].has_key("ca"):oca=ovirts[client]["ca"]
  if ovirts[client].has_key("org"):oorg=ovirts[client]["org"]
