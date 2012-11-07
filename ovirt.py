@@ -519,7 +519,7 @@ if len(args) == 1 and not new:
   api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=adddisk,type_="data",status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=False))
   print "Disk with size %d GB added" % (adddisk/1024/1024/1024)
  if start: 
-  if api.vms.get(name).status.state=="up":
+  if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
    print "VM allready started"
   else:
    api.vms.get(name).start() 
