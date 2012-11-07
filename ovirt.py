@@ -521,9 +521,9 @@ if len(args) == 1 and not new:
  if start: 
   if api.vms.get(name).status.state=="up":
    print "VM allready started"
-   sys.exit(0)
-  api.vms.get(name).start() 
-  print "VM %s started" % name
+  else:
+   api.vms.get(name).start() 
+   print "VM %s started" % name
  if restart:
   if api.vms.get(name).status.state!="down":api.vms.get(name).stop() 
   api.vms.get(name).start() 
@@ -558,9 +558,12 @@ if len(args) == 1 and not new:
  for tag in vm.get_tags().list():
    print "Tags: %s" % tag.get_name()
  if console:
-  if vm.status.state=="wait_for_launch" or vm.status.state=="down":
-   print "Cant connect to machine s console beeing in that state"
+  if vm.status.state=="down":
+   print "Machine down"
    sys.exit(1)
+  while vm.status.state=="wait_for_launch":
+   time.sleep(5)
+   print "Waiting for machine to be up"
   if not oca or not os.path.exists(oca):
    print "VDSM CA file is required in order to connect to console.Get it from /etc/pki/vdsm/cacert.pem and define its path in ovirt.ini"
    sys.exit(1)
