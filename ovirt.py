@@ -564,7 +564,7 @@ if len(args) == 1 and not new:
   if vm.status.state=="down":
    print "Machine down"
    sys.exit(1)
-  while vm.status.state=="wait_for_launch":
+  while api.vms.get(name=name).status.state=="wait_for_launch":
    print "Waiting for machine to be up..."
    time.sleep(5)
   if not oca or not os.path.exists(oca):
@@ -573,6 +573,7 @@ if len(args) == 1 and not new:
   if not oorg:
    print "Define your org in ovirt.ini"
    sys.exit(1)
+  vm=api.vms.get(name=name)
   vm.ticket().set_ticket("")
   ticket=vm.ticket().get_ticket().get_value()
   address,port,sport=vm.get_display().get_address(),vm.get_display().get_port(),vm.get_display().get_secure_port()
