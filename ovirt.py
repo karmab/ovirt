@@ -771,7 +771,7 @@ if not nolaunch:
  while api.vms.get(name).status.state =="image_locked":
   print "Waiting For image to be unlocked..."
   time.sleep(5) 
- for disk in vm.disks.list():
+ for disk in api.vms.get(name)disks.list():
   while disk.get_status().get_state()=="Locked":
    print "Waiting For one of the disks to be unlocked..."
    time.sleep(5) 
