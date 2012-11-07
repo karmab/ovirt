@@ -775,7 +775,7 @@ if not nolaunch:
   time.sleep(5) 
  for disk in api.vms.get(name).disks.list():
   while disk.get_status().get_state()=="Locked" or disk.get_status().get_state()=="locked":
-   print "Waiting For one of the disks to be unlocked..."
+   print "disk still in %s state" % disk.get_status().get_state()
    time.sleep(5) 
  #at this point,VM is ready to be started
  api.vms.get(name).start()
