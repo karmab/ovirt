@@ -562,8 +562,8 @@ if len(args) == 1 and not new:
    print "Machine down"
    sys.exit(1)
   while vm.status.state=="wait_for_launch":
+   print "Waiting for machine to be up..."
    time.sleep(5)
-   print "Waiting for machine to be up"
   if not oca or not os.path.exists(oca):
    print "VDSM CA file is required in order to connect to console.Get it from /etc/pki/vdsm/cacert.pem and define its path in ovirt.ini"
    sys.exit(1)
