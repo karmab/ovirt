@@ -52,7 +52,7 @@ parser.add_option("-y", "--initrd", dest="initrd", type="string", help="Specify 
 parser.add_option("-z", "--cmdline", dest="cmdline", type="string", help="Specify cmdline to boot VM")
 parser.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom")
 parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
-parser.add_option("-D", "--storagedomain" , dest="storagedomain", type="string", help="Specify Domain")
+parser.add_option("-D", "--storagedomain" , dest="storagedomain", type="string", help="Specify Storage Domain")
 parser.add_option("-F", "--forcekill", dest="forcekill", action="store_true", help="Dont ask confirmation when killing a VM")
 parser.add_option("-K", "--kill", dest="kill", action="store_true" , help="specify VM to kill in virtual center.Confirmation will be asked unless -F/--forcekill flag is set.VM will also be killed in cobbler server if -Z/-cobbler flag set")
 parser.add_option("-E", "--cluster", dest="clu", type="string", help="Specify Cluster")
@@ -573,7 +573,8 @@ if len(args) == 1 and not new:
   realaddress=getip(api,vm.get_host().get_id())
   subject="%s,CN=%s" % (oorg,realaddress)
   print "Password:	%s" % ticket
-  os.popen("remote-viewer --spice-ca-file %s --spice-host-subject '%s' spice://%s/?port=%s\&tls-port=%s &" %  (oca,subject,address,port,sport))
+  #os.popen("remote-viewer --spice-ca-file %s --spice-host-subject '%s' spice://%s/?port=%s\&tls-port=%s &" %  (oca,subject,address,port,sport))
+  os.popen("echo %s | remote-viewer --spice-ca-file %s --spice-host-subject '%s' spice://%s/?port=%s\&tls-port=%s &" %  (ticket,oca,subject,address,port,sport))
  sys.exit(0)
 
 #parse profile for specific client
@@ -621,16 +622,20 @@ if not profiles.has_key(profile):
  sys.exit(0)
 
 #grab all conf from profile 
-clu=profiles[profile]['clu']
-if not guestid and profiles[profile].has_key("guestid"):guestid=profiles[profile]['guestid']
-if profiles[profile].has_key("numinterfaces"):numinterfaces=int(profiles[profile]['numinterfaces'])
-if profiles[profile].has_key("boot1"):boot1=profiles[profile]['boot1']
-if profiles[profile].has_key("boot2"):boot2=profiles[profile]['boot2']
-if profiles[profile].has_key("iso"):iso=profiles[profile]['iso']
-if not tags and profiles[profile].has_key("tags"):tags=profiles[profile]['tags']
-if not kernel and profiles[profile].has_key("kernel"):kernel=profiles[profile]['kernel']
-if not initrd and profiles[profile].has_key("initrd"):initrd=profiles[profile]['initrd']
-if not cmdline and profiles[profile].has_key("cmdline"):cmdline=profiles[profile]['cmdline']
+clu=profiles[profile]["clu"]
+if profiles[profile].has_key("numinterfaces"):numinterfaces=int(profiles[profile]["numinterfaces"])
+if profiles[profile].has_key("boot1"):boot1=profiles[profile]["boot1"]
+if profiles[profile].has_key("boot2"):boot2=profiles[profile]["boot2"]
+if profiles[profile].has_key("iso"):iso=profiles[profile]["iso"]
+if profiles[profile].has_key("storagedomain"):storagedomain=profiles[profile]["storagedomain"]
+if profiles[profile].has_key("netinterface"):netinterface=profiles[profile]["netinterface"]
+if profiles[profile].has_key("diskinterface"):netinterface=profiles[profile]["diskinterface"]
+if not guestid and profiles[profile].has_key("guestid"):guestid=profiles[profile]["guestid"]
+if not tags and profiles[profile].has_key("tags"):tags=profiles[profile]["tags"]
+if not kernel and profiles[profile].has_key("kernel"):kernel=profiles[profile]["kernel"]
+if not initrd and profiles[profile].has_key("initrd"):initrd=profiles[profile]["initrd"]
+if not cmdline and profiles[profile].has_key("cmdline"):cmdline=profiles[profile]["cmdline"]
+
 if extra:cmdline="%s %s" %(cmdline,extra)
 #grab nets 
 if numinterfaces == 1:
