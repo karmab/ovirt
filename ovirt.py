@@ -379,9 +379,12 @@ if discover:
   print "Host: %s Cpu: %s" % (h.name,h.cpu.name)
  print "Storage:"
  for s in stores:
-  used=s.get_used()/1024/1024/1024
-  available=s.get_available()/1024/1024/1024
-  print "Storage: %s Type: %s Total space: %sGb Available space:%sGb" % (s.name,s.get_type(),used+available,available)
+  try: 
+   used=s.get_used()/1024/1024/1024
+   available=s.get_available()/1024/1024/1024
+   print "Storage: %s Type: %s Total space: %sGb Available space:%sGb" % (s.name,s.get_type(),used+available,available)
+  except:
+   print "Storage: %s Type: %s Total space: N/A Available space:N/A" % (s.name,s.get_type())
  sys.exit(0)
 
 if len(args) == 1 and not new:
