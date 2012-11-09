@@ -25,10 +25,10 @@ ERR_NOOVIRTFILE="You need to create a correct ovirt.ini file in your home direct
 ERR_NOCOBBLERFILE="You need to create a correct cobbler.ini file in your home directory.Check documentation"
 ERR_CLIENTNOTFOUND="Client not found"
 ERR_CLIENTNOCONF="Client not found in conf file"
-ERR_CLIENTNOPROFILE="You need to create an ini file for all clients with defined profiles.Check documentation"
+ERR_CLIENTNOPROFILE="Missing client file in your home directory.Check documentation"
 
 usage="script to create virtual machines on ovirt/rhev"
-version="1.2"
+version="1.8"
 parser = optparse.OptionParser("Usage: %prog [options] vmname")
 parser.add_option("-a", "--adddisk", dest="adddisk", type="int", help="Specify Disk size,in Go to add")
 parser.add_option("-b", "--bad", dest="bad",action="store_true", help="If set,treat all actions as not for a linux guest,meaning net interfaces will be of type e1000 and disk of type ide.Necessary for windows or solaris guests")
@@ -191,7 +191,7 @@ if len(args)!=1 and new:
  print "Usage: %prog [options] vmname"
  sys.exit(1)
 
-ovirtconffile=os.environ['HOME']+"/ovirt.ini"
+ovirtconffile="%s/ovirt.ini" %(os.environ['HOME'])
 #parse ovirt client auth file
 if not os.path.exists(ovirtconffile):
  print "Missing %s in your  home directory.Check documentation" % ovirtconffile
@@ -271,7 +271,7 @@ except KeyError,e:
 
 #parse cobbler client auth file
 if cobbler and client:
- cobblerconffile=os.environ['HOME']+"/cobbler.ini"
+ cobblerconffile="%s/cobbler.ini" % (os.environ['HOME'])
  if not os.path.exists(cobblerconffile):
   print "Missing %s in your  home directory.Check documentation" % cobblerconffile
   sys.exit(1)
@@ -586,13 +586,13 @@ if len(args) == 1 and not new:
  sys.exit(0)
 
 #parse profile for specific client
-if not os.path.exists("%s.ini" % client):
- print "You need to create a %s.ini within this directory.Check documentation" % client
+clientfile="%s/%s.ini" % (os.environ['HOME'],client)
+if not os.path.exists(clientfile):
+ print "You need to create a %s.ini in your homedirectory.Check documentation" % client
  sys.exit(1)
 try:
- conffile="%s.ini" % client
  c = ConfigParser.ConfigParser()
- c.read(conffile)
+ c.read(clientfile)
  profiles={}
  for prof in c.sections():
   for option in  c.options(prof):
@@ -608,6 +608,10 @@ if listprofiles:
  for profile in sorted(profiles.keys()): print profile
  sys.exit(0)
 
+
+if not new:
+ print "No or non-existent arguments given...Leaving"
+ sys.exit(0)
 if len(args) == 1:name=args[0]
 if not name:name=raw_input("enter machine s name:\n")
 if cobbler:
