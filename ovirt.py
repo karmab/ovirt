@@ -308,15 +308,19 @@ if listvms:
 
 if listisos:
  isodomains=[]
- for sd in api.storagedomains.list():
-  if sd.get_type()=="iso":isodomains.append(sd)
+ datacenters=api.datacenters.list()
+ for ds in datacenters: 
+  for sd in ds.storagedomains.list():
+   if sd.get_type()=="iso" and sd.get_status().get_state()=="active":isodomains.append(sd)
  if len(isodomains)==0:
   print "No iso domain found.Leaving..."
   sys.exit(1)
  for sd in isodomains:
   print "Isodomain: %s" % (sd.get_name())
   print "Available isos:"
-  for f in sd.files.list():
+  isodomainid=sd.get_id()
+  sdfiles=api.storagedomains.get(id=isodomainid).files
+  for f in sdfiles.list():
    print f.get_id()
  sys.exit(0)
 
@@ -365,26 +369,21 @@ if discover:
  clusters=api.clusters.list()
  datacenters=api.datacenters.list()
  hosts=api.hosts.list()
- stores=api.storagedomains.list()
- print "Datacenters:"
- for ds in datacenters:
-  print "Datacenter: %s Type: %s " % (ds.name,ds.storage_type)
- print "Clusters and Networks:"
+ for ds in datacenters: 
+  print "Datacenter: %s Type: %s Status: %s" % (ds.name,ds.storage_type,ds.get_status().get_state())
+  for s in ds.storagedomains.list():#stor.get_status().get_state()
+   if s.get_status().get_state()=="active":
+    used=s.get_used()/1024/1024/1024
+    available=s.get_available()/1024/1024/1024
+    print "Storage: %s Type: %s Status: %s Total space: %sGb Available space:%sGb" % (s.name,s.get_type(),s.get_status().get_state(),used+available,available)
+   else:
+    print "Storage: %s Type: %s Status: %s Total space: N/A Available space:N/A" % (s.name,s.get_type(),s.get_status().get_state())
  for clu  in clusters:
   print "Cluster: %s " % clu.name
   for net in clu.networks.list():print "Network: %s " % net.name
- print "Hosts:"
  for h in hosts:
   #print "Host: %s Cpu: %s Memory:%sGb" % (h.name,h.cpu.name,h.memory/1024/1024/1024)
   print "Host: %s Cpu: %s" % (h.name,h.cpu.name)
- print "Storage:"
- for s in stores:
-  try: 
-   used=s.get_used()/1024/1024/1024
-   available=s.get_available()/1024/1024/1024
-   print "Storage: %s Type: %s Total space: %sGb Available space:%sGb" % (s.name,s.get_type(),used+available,available)
-  except:
-   print "Storage: %s Type: %s Total space: N/A Available space:N/A" % (s.name,s.get_type())
  sys.exit(0)
 
 if len(args) == 1 and not new:
