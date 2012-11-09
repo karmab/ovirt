@@ -605,8 +605,12 @@ if len(args) == 1 and not new:
   id=vm.get_host().get_id()
   realaddress=getip(api,vm.get_host().get_id())
   subject="%s,CN=%s" % (oorg,realaddress)
-  print "Password:	%s" % ticket
-  #os.popen("remote-viewer --spice-ca-file %s --spice-host-subject '%s' spice://%s/?port=%s\&tls-port=%s &" %  (oca,subject,address,port,sport))
+  print "Password copied to clipboard:	%s" % ticket
+  #copy to clipboard
+  if os.environ["KDE_FULL_SESSION"]:
+   os.popen("qdbus org.kde.klipper /klipper setClipboardContents %s" % ticket)
+  else:
+   os.popen("xsel", "wb").write(ticket)
   os.popen("echo %s | remote-viewer --spice-ca-file %s --spice-host-subject '%s' spice://%s/?port=%s\&tls-port=%s &" %  (ticket,oca,subject,address,port,sport))
  sys.exit(0)
 
