@@ -50,7 +50,7 @@ parser.add_option("-u", "--deletetag", dest="deletetag", type="string", help="De
 parser.add_option("-x", "--kernel", dest="kernel", type="string", help="Specify kernel to boot VM")
 parser.add_option("-y", "--initrd", dest="initrd", type="string", help="Specify initrd to boot VM")
 parser.add_option("-z", "--cmdline", dest="cmdline", type="string", help="Specify cmdline to boot VM")
-parser.add_option("-A", "--activate", dest="activate", action="store_true", help="Activate a maintenance StorageDomain")
+parser.add_option("-A", "--activate", dest="activate", type="string", help="Activate specified storageDomain")
 parser.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom")
 parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
 parser.add_option("-D", "--storagedomain" , dest="storagedomain", type="string", help="Specify Storage Domain")
@@ -60,10 +60,11 @@ parser.add_option("-E", "--cluster", dest="clu", type="string", help="Specify Cl
 parser.add_option("-H", "--listhosts", dest="listhosts", action="store_true", help="List hosts")
 parser.add_option("-I", "--listisos", dest="listisos", action="store_true", help="List isos")
 parser.add_option("-L", "--listclients", dest="listclients", action="store_true", help="list available clients")
-parser.add_option("-M", "--listvms", dest="listvms", action="store_true", help="list all vms")
+parser.add_option("-M", "--maintenance", dest="maintenance", type="string", help="Put in maintenance specified storageDomain")
 parser.add_option("-R", "--restart", dest="restart", action="store_true", help="Restart vm")
 parser.add_option("-S", "--start", dest="start", action="store_true", help="Start VM")
 parser.add_option("-T", "--thin", dest="thin", action="store_true", help="Use thin provisioning for disk")
+parser.add_option("-V", "--listvms", dest="listvms", action="store_true", help="list all vms")
 parser.add_option("-W", "--stop", dest="stop", action="store_true", help="Stop VM")
 parser.add_option("-X", "--search" , dest="search", type="string", help="Search VMS")
 parser.add_option("-Y", "--nolaunch", dest="nolaunch", action="store_true", help="Dont Launch VM,just create it")
@@ -100,6 +101,7 @@ ip1=options.ip1
 ip2=options.ip2
 ip3=options.ip3
 activate=options.activate
+maintenance=options.maintenance
 kernel=options.kernel
 initrd=options.initrd
 cmdline=options.cmdline
@@ -163,22 +165,28 @@ def getip(api,id):
  for h in hosts.list():
   if h.get_id()==id:return h.get_address()
 
-
-#def findiso(api,iso):
-# isofound=False
-# isodomains=[]
-# for sd in api.storagedomains.list():
-#  if sd.get_type()=="iso":isodomains.append(sd)
-# if len(isodomains)==0:
-#  print "No iso domain found.Leaving..."
-#  sys.exit(1)
-# for sd in isodomains:
-#  for f in sd.files.list():
-#   if f.get_id()==iso:
-#    isofound=True
-#    return f
-# print "iso not found"
-# sys.exit(1)
+def switchstoragedomain(api,storagedomain,activate=True):
+ action=False
+ sd=api.storagedomains.get(name=storagedomain)
+ if not sd:
+  print "Storage domain not found"
+  sys.exit(1)
+ else:
+  id=sd.get_id()
+  sds=[]
+  for ds in api.datacenters.list():
+   for s in ds.storagedomains.list():
+    if activate: 
+     if s.get_status().get_state()!="active" and s.get_id()==id:
+      s.activate()
+      print "StorageDomain %s activated" % (storagedomain)
+      action=True
+    if not activate: 
+     if s.get_status().get_state()=="active" and s.get_id()==id:
+      s.deactivate()
+      print "StorageDomain %s put in maintenance" % (storagedomain)
+      action=True
+ if not action:print "No actions needed..."
 
 def checkiso(api,iso=None):
  isodomains=[]
@@ -331,27 +339,21 @@ if listvms:
  sys.exit(0)
 
 if listisos:
- isodomains=[]
- datacenters=api.datacenters.list()
- for ds in datacenters: 
-  for sd in ds.storagedomains.list():
-   if sd.get_type()=="iso" and sd.get_status().get_state()=="active":isodomains.append(sd)
- if len(isodomains)==0:
-  print "No iso domain found.Leaving..."
-  sys.exit(1)
- for sd in isodomains:
-  print "Isodomain: %s" % (sd.get_name())
-  print "Available isos:"
-  isodomainid=sd.get_id()
-  sdfiles=api.storagedomains.get(id=isodomainid).files
-  for f in sdfiles.list():
-   print f.get_id()
+ checkiso(api)
  sys.exit(0)
 
 if listtags:
  for tag  in api.tags.list():
   print "TAG: %s" % tag.get_name()
  sys.exit(0)
+
+if activate:
+ switchstoragedomain(api,activate)
+ sys.exit(0) 
+
+if maintenance:
+ switchstoragedomain(api,maintenance,False) 
+ sys.exit(0) 
 
 
 #LIST HOSTS
