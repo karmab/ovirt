@@ -50,6 +50,7 @@ parser.add_option("-u", "--deletetag", dest="deletetag", type="string", help="De
 parser.add_option("-x", "--kernel", dest="kernel", type="string", help="Specify kernel to boot VM")
 parser.add_option("-y", "--initrd", dest="initrd", type="string", help="Specify initrd to boot VM")
 parser.add_option("-z", "--cmdline", dest="cmdline", type="string", help="Specify cmdline to boot VM")
+parser.add_option("-A", "--activate", dest="activate", action="store_true", help="Activate a maintenance StorageDomain")
 parser.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom")
 parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
 parser.add_option("-D", "--storagedomain" , dest="storagedomain", type="string", help="Specify Storage Domain")
@@ -98,6 +99,7 @@ disksize = options.disksize
 ip1=options.ip1
 ip2=options.ip2
 ip3=options.ip3
+activate=options.activate
 kernel=options.kernel
 initrd=options.initrd
 cmdline=options.cmdline
@@ -162,21 +164,43 @@ def getip(api,id):
   if h.get_id()==id:return h.get_address()
 
 
-def findiso(api,iso):
- isofound=False
+#def findiso(api,iso):
+# isofound=False
+# isodomains=[]
+# for sd in api.storagedomains.list():
+#  if sd.get_type()=="iso":isodomains.append(sd)
+# if len(isodomains)==0:
+#  print "No iso domain found.Leaving..."
+#  sys.exit(1)
+# for sd in isodomains:
+#  for f in sd.files.list():
+#   if f.get_id()==iso:
+#    isofound=True
+#    return f
+# print "iso not found"
+# sys.exit(1)
+
+def checkiso(api,iso=None):
  isodomains=[]
- for sd in api.storagedomains.list():
-  if sd.get_type()=="iso":isodomains.append(sd)
+ datacenters=api.datacenters.list()
+ for ds in datacenters:
+  for sd in ds.storagedomains.list():
+   if sd.get_type()=="iso" and sd.get_status().get_state()=="active":isodomains.append(sd)
  if len(isodomains)==0:
   print "No iso domain found.Leaving..."
   sys.exit(1)
  for sd in isodomains:
-  for f in sd.files.list():
-   if f.get_id()==iso:
-    isofound=True
+  if not iso:print "Isodomain: %s" % (sd.get_name())
+  if not iso:print "Available isos:"
+  isodomainid=sd.get_id()
+  sdfiles=api.storagedomains.get(id=isodomainid).files
+  for f in sdfiles.list():
+   if not iso:
+    print f.get_id()
+   elif f.get_id()==iso:
     return f
- print "iso not found"
- sys.exit(1)
+   
+ sys.exit(0)
 
 if adddisk:adddisk=adddisk*GB
 ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
@@ -693,7 +717,7 @@ api.vms.get(name).nics.add(params.NIC(name='nic1', network=params.Network(name=n
 if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='nic2', network=params.Network(name=net2), interface=netinterface))
 if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='nic3', network=params.Network(name=net3), interface=netinterface))
 if iso:
- iso=findiso(api,iso)
+ iso=checkiso(api,iso)
  cdrom=params.CdRom(file=iso)
  api.vms.get(name).cdroms.add(cdrom)
 if tags:
