@@ -178,6 +178,7 @@ def findiso(api,iso):
  print "iso not found"
  sys.exit(1)
 
+if memory:memory=memory*MB
 if adddisk:adddisk=adddisk*GB
 ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
 #thin provisioning
@@ -249,12 +250,12 @@ try:
  opassword=ovirts[client]["password"]
  if ovirts[client].has_key("ssl"):ossl=ovirts[client]["ssl"]
  if ovirts[client].has_key("clu"):clu=ovirts[client]["clu"]
- if ovirts[client].has_key("numcpu"):numcpu=int(ovirts[client]["numcpu"])
+ if not numcpu and ovirts[client].has_key("numcpu"):numcpu=int(ovirts[client]["numcpu"])
  if ovirts[client].has_key("diskformat"):diskformat=ovirts[client]["diskformat"]
  if ovirts[client].has_key("diskinterface"):diskinterface=ovirts[client]["diskformat"]
- if ovirts[client].has_key("disksize"):disksize=int(ovirts[client]["disksize"])*GB
- if ovirts[client].has_key("memory"):memory=int(ovirts[client]["memory"])*MB
- if ovirts[client].has_key("storagedomain"):storagedomain=ovirts[client]["storagedomain"]
+ if not disksize and ovirts[client].has_key("disksize"):disksize=int(ovirts[client]["disksize"])*GB
+ if not memory and ovirts[client].has_key("memory"):memory=int(ovirts[client]["memory"])*MB
+ if not storagedomain and ovirts[client].has_key("storagedomain"):storagedomain=ovirts[client]["storagedomain"]
  if ovirts[client].has_key("numinterfaces"):numinterfaces=int(ovirts[client]["numinterfaces"])
  if ovirts[client].has_key("netinterface"):diskinterface=ovirts[client]["netinterface"]
  if ovirts[client].has_key("ssl"):ossl=True
@@ -554,6 +555,7 @@ if len(args) == 1 and not new:
  print "Memory: %dMb" % memory
  for disk in vm.disks.list():
    size=disk.size/1024/1024/1024
+   for stor in disk.get_storage_domains().get_storage_domain():print stor.name
    print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state())
  for nic in vm.nics.list():
   net=api.networks.get(id=nic.network.id).get_name()
