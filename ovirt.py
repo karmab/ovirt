@@ -25,10 +25,10 @@ ERR_NOOVIRTFILE="You need to create a correct ovirt.ini file in your home direct
 ERR_NOCOBBLERFILE="You need to create a correct cobbler.ini file in your home directory.Check documentation"
 ERR_CLIENTNOTFOUND="Client not found"
 ERR_CLIENTNOCONF="Client not found in conf file"
-ERR_CLIENTNOPROFILE="You need to create an ini file for all clients with defined profiles.Check documentation"
+ERR_CLIENTNOPROFILE="Missing client file in your home directory.Check documentation"
 
 usage="script to create virtual machines on ovirt/rhev"
-version="1.2"
+version="1.8"
 parser = optparse.OptionParser("Usage: %prog [options] vmname")
 parser.add_option("-a", "--adddisk", dest="adddisk", type="int", help="Specify Disk size,in Go to add")
 parser.add_option("-b", "--bad", dest="bad",action="store_true", help="If set,treat all actions as not for a linux guest,meaning net interfaces will be of type e1000 and disk of type ide.Necessary for windows or solaris guests")
@@ -50,6 +50,7 @@ parser.add_option("-u", "--deletetag", dest="deletetag", type="string", help="De
 parser.add_option("-x", "--kernel", dest="kernel", type="string", help="Specify kernel to boot VM")
 parser.add_option("-y", "--initrd", dest="initrd", type="string", help="Specify initrd to boot VM")
 parser.add_option("-z", "--cmdline", dest="cmdline", type="string", help="Specify cmdline to boot VM")
+parser.add_option("-A", "--activate", dest="activate", type="string", help="Activate specified storageDomain")
 parser.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom")
 parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
 parser.add_option("-D", "--storagedomain" , dest="storagedomain", type="string", help="Specify Storage Domain")
@@ -59,10 +60,11 @@ parser.add_option("-E", "--cluster", dest="clu", type="string", help="Specify Cl
 parser.add_option("-H", "--listhosts", dest="listhosts", action="store_true", help="List hosts")
 parser.add_option("-I", "--listisos", dest="listisos", action="store_true", help="List isos")
 parser.add_option("-L", "--listclients", dest="listclients", action="store_true", help="list available clients")
-parser.add_option("-M", "--listvms", dest="listvms", action="store_true", help="list all vms")
+parser.add_option("-M", "--maintenance", dest="maintenance", type="string", help="Put in maintenance specified storageDomain")
 parser.add_option("-R", "--restart", dest="restart", action="store_true", help="Restart vm")
 parser.add_option("-S", "--start", dest="start", action="store_true", help="Start VM")
 parser.add_option("-T", "--thin", dest="thin", action="store_true", help="Use thin provisioning for disk")
+parser.add_option("-V", "--listvms", dest="listvms", action="store_true", help="list all vms")
 parser.add_option("-W", "--stop", dest="stop", action="store_true", help="Stop VM")
 parser.add_option("-X", "--search" , dest="search", type="string", help="Search VMS")
 parser.add_option("-Y", "--nolaunch", dest="nolaunch", action="store_true", help="Dont Launch VM,just create it")
@@ -98,6 +100,8 @@ disksize = options.disksize
 ip1=options.ip1
 ip2=options.ip2
 ip3=options.ip3
+activate=options.activate
+maintenance=options.maintenance
 kernel=options.kernel
 initrd=options.initrd
 cmdline=options.cmdline
@@ -161,22 +165,50 @@ def getip(api,id):
  for h in hosts.list():
   if h.get_id()==id:return h.get_address()
 
+def switchstoragedomain(api,storagedomain,activate=True):
+ action=False
+ sd=api.storagedomains.get(name=storagedomain)
+ if not sd:
+  print "Storage domain not found"
+  sys.exit(1)
+ else:
+  id=sd.get_id()
+  sds=[]
+  for ds in api.datacenters.list():
+   for s in ds.storagedomains.list():
+    if activate: 
+     if s.get_status().get_state()!="active" and s.get_id()==id:
+      s.activate()
+      print "StorageDomain %s activated" % (storagedomain)
+      action=True
+    if not activate: 
+     if s.get_status().get_state()=="active" and s.get_id()==id:
+      s.deactivate()
+      print "StorageDomain %s put in maintenance" % (storagedomain)
+      action=True
+ if not action:print "No actions needed..."
 
-def findiso(api,iso):
- isofound=False
+def checkiso(api,iso=None):
  isodomains=[]
- for sd in api.storagedomains.list():
-  if sd.get_type()=="iso":isodomains.append(sd)
+ datacenters=api.datacenters.list()
+ for ds in datacenters:
+  for sd in ds.storagedomains.list():
+   if sd.get_type()=="iso" and sd.get_status().get_state()=="active":isodomains.append(sd)
  if len(isodomains)==0:
   print "No iso domain found.Leaving..."
   sys.exit(1)
  for sd in isodomains:
-  for f in sd.files.list():
-   if f.get_id()==iso:
-    isofound=True
+  if not iso:print "Isodomain: %s" % (sd.get_name())
+  if not iso:print "Available isos:"
+  isodomainid=sd.get_id()
+  sdfiles=api.storagedomains.get(id=isodomainid).files
+  for f in sdfiles.list():
+   if not iso:
+    print f.get_id()
+   elif f.get_id()==iso:
     return f
- print "iso not found"
- sys.exit(1)
+   
+ sys.exit(0)
 
 if memory:memory=memory*MB
 if adddisk:adddisk=adddisk*GB
@@ -192,7 +224,7 @@ if len(args)!=1 and new:
  print "Usage: %prog [options] vmname"
  sys.exit(1)
 
-ovirtconffile=os.environ['HOME']+"/ovirt.ini"
+ovirtconffile="%s/ovirt.ini" %(os.environ['HOME'])
 #parse ovirt client auth file
 if not os.path.exists(ovirtconffile):
  print "Missing %s in your  home directory.Check documentation" % ovirtconffile
@@ -272,7 +304,7 @@ except KeyError,e:
 
 #parse cobbler client auth file
 if cobbler and client:
- cobblerconffile=os.environ['HOME']+"/cobbler.ini"
+ cobblerconffile="%s/cobbler.ini" % (os.environ['HOME'])
  if not os.path.exists(cobblerconffile):
   print "Missing %s in your  home directory.Check documentation" % cobblerconffile
   sys.exit(1)
@@ -308,23 +340,21 @@ if listvms:
  sys.exit(0)
 
 if listisos:
- isodomains=[]
- for sd in api.storagedomains.list():
-  if sd.get_type()=="iso":isodomains.append(sd)
- if len(isodomains)==0:
-  print "No iso domain found.Leaving..."
-  sys.exit(1)
- for sd in isodomains:
-  print "Isodomain: %s" % (sd.get_name())
-  print "Available isos:"
-  for f in sd.files.list():
-   print f.get_id()
+ checkiso(api)
  sys.exit(0)
 
 if listtags:
  for tag  in api.tags.list():
   print "TAG: %s" % tag.get_name()
  sys.exit(0)
+
+if activate:
+ switchstoragedomain(api,activate)
+ sys.exit(0) 
+
+if maintenance:
+ switchstoragedomain(api,maintenance,False) 
+ sys.exit(0) 
 
 
 #LIST HOSTS
@@ -366,26 +396,21 @@ if discover:
  clusters=api.clusters.list()
  datacenters=api.datacenters.list()
  hosts=api.hosts.list()
- stores=api.storagedomains.list()
- print "Datacenters:"
- for ds in datacenters:
-  print "Datacenter: %s Type: %s " % (ds.name,ds.storage_type)
- print "Clusters and Networks:"
+ for ds in datacenters: 
+  print "Datacenter: %s Type: %s Status: %s" % (ds.name,ds.storage_type,ds.get_status().get_state())
+  for s in ds.storagedomains.list():#stor.get_status().get_state()
+   if s.get_status().get_state()=="active":
+    used=s.get_used()/1024/1024/1024
+    available=s.get_available()/1024/1024/1024
+    print "Storage: %s Type: %s Status: %s Total space: %sGb Available space:%sGb" % (s.name,s.get_type(),s.get_status().get_state(),used+available,available)
+   else:
+    print "Storage: %s Type: %s Status: %s Total space: N/A Available space:N/A" % (s.name,s.get_type(),s.get_status().get_state())
  for clu  in clusters:
   print "Cluster: %s " % clu.name
   for net in clu.networks.list():print "Network: %s " % net.name
- print "Hosts:"
  for h in hosts:
   #print "Host: %s Cpu: %s Memory:%sGb" % (h.name,h.cpu.name,h.memory/1024/1024/1024)
   print "Host: %s Cpu: %s" % (h.name,h.cpu.name)
- print "Storage:"
- for s in stores:
-  try: 
-   used=s.get_used()/1024/1024/1024
-   available=s.get_available()/1024/1024/1024
-   print "Storage: %s Type: %s Total space: %sGb Available space:%sGb" % (s.name,s.get_type(),used+available,available)
-  except:
-   print "Storage: %s Type: %s Total space: N/A Available space:N/A" % (s.name,s.get_type())
  sys.exit(0)
 
 if len(args) == 1 and not new:
@@ -582,19 +607,23 @@ if len(args) == 1 and not new:
   id=vm.get_host().get_id()
   realaddress=getip(api,vm.get_host().get_id())
   subject="%s,CN=%s" % (oorg,realaddress)
-  print "Password:	%s" % ticket
-  #os.popen("remote-viewer --spice-ca-file %s --spice-host-subject '%s' spice://%s/?port=%s\&tls-port=%s &" %  (oca,subject,address,port,sport))
+  print "Password copied to clipboard:	%s" % ticket
+  #copy to clipboard
+  if os.environ["KDE_FULL_SESSION"]:
+   os.popen("qdbus org.kde.klipper /klipper setClipboardContents %s" % ticket)
+  else:
+   os.popen("xsel", "wb").write(ticket)
   os.popen("echo %s | remote-viewer --spice-ca-file %s --spice-host-subject '%s' spice://%s/?port=%s\&tls-port=%s &" %  (ticket,oca,subject,address,port,sport))
  sys.exit(0)
 
 #parse profile for specific client
-if not os.path.exists("%s.ini" % client):
- print "You need to create a %s.ini within this directory.Check documentation" % client
+clientfile="%s/%s.ini" % (os.environ['HOME'],client)
+if not os.path.exists(clientfile):
+ print "You need to create a %s.ini in your homedirectory.Check documentation" % client
  sys.exit(1)
 try:
- conffile="%s.ini" % client
  c = ConfigParser.ConfigParser()
- c.read(conffile)
+ c.read(clientfile)
  profiles={}
  for prof in c.sections():
   for option in  c.options(prof):
@@ -610,6 +639,10 @@ if listprofiles:
  for profile in sorted(profiles.keys()): print profile
  sys.exit(0)
 
+
+if not new:
+ print "No or non-existent arguments given...Leaving"
+ sys.exit(0)
 if len(args) == 1:name=args[0]
 if not name:name=raw_input("enter machine s name:\n")
 if cobbler:
@@ -692,7 +725,7 @@ api.vms.get(name).nics.add(params.NIC(name='nic1', network=params.Network(name=n
 if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='nic2', network=params.Network(name=net2), interface=netinterface))
 if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='nic3', network=params.Network(name=net3), interface=netinterface))
 if iso:
- iso=findiso(api,iso)
+ iso=checkiso(api,iso)
  cdrom=params.CdRom(file=iso)
  api.vms.get(name).cdroms.add(cdrom)
 if tags:
