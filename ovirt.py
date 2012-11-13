@@ -33,11 +33,12 @@ parser = optparse.OptionParser("Usage: %prog [options] vmname")
 parser.add_option("-a", "--adddisk", dest="adddisk", type="int", help="Specify Disk size,in Go to add")
 parser.add_option("-b", "--bad", dest="bad",action="store_true", help="If set,treat all actions as not for a linux guest,meaning net interfaces will be of type e1000 and disk of type ide.Necessary for windows or solaris guests")
 parser.add_option("-c", "--cpu", dest="numcpu", type="int", help="Specify Number of CPUS")
-parser.add_option("-d", "--discover", dest="discover", action="store_true", help="Discover your ovirt setup")
+parser.add_option("-d", "--disk", dest="disksize2", type="int", help="Specify Disk size,in Go at VM creation")
 parser.add_option("-e", "--extra", dest="extra", type="string", help="Extra parameters to add to cmdline")
 parser.add_option("-f", "--diskformat", dest="diskformat", type="string", help="Specify Disk mode.Can be raw or cow")
 parser.add_option("-g", "--guestid", dest="guestid", type="string", help="Change guestid of VM")
 parser.add_option("-i", "--iso", dest="iso", type="string", help="Specify iso to add to VM")
+parser.add_option("-j", "--migrate", dest="migrate", action="store_true", help="Migrate VM")
 parser.add_option("-l", "--listprofiles", dest="listprofiles", action="store_true", help="list available profiles")
 parser.add_option("-m", "--memory", dest="memory2", type="int", help="Specify Memory, in Mo")
 parser.add_option("-n", "--new", dest="new",action="store_true", help="Create new VM")
@@ -45,9 +46,10 @@ parser.add_option("-o", "--listtags", dest="listtags", action="store_true", help
 parser.add_option("-p", "--profile", dest="profile",type="string", help="specify Profile")
 parser.add_option("-q", "--quit", dest="isoquit", action="store_true", help="Remove iso from VM")
 parser.add_option("-r", "--reset", dest="reset", action="store_true", help="Reset kernel parameters for given VM")
-parser.add_option("-s", "--size", dest="disksize2", type="int", help="Specify Disk size,in Go at VM creation")
+parser.add_option("-s", "--start", dest="start", action="store_true", help="Start VM")
 parser.add_option("-t", "--tags", dest="tags", type="string", help="Add tags to VM")
 parser.add_option("-u", "--deletetag", dest="deletetag", type="string", help="Delete tag from VM")
+parser.add_option("-w", "--stop", dest="stop", action="store_true", help="Stop VM")
 parser.add_option("-x", "--kernel", dest="kernel", type="string", help="Specify kernel to boot VM")
 parser.add_option("-y", "--initrd", dest="initrd", type="string", help="Specify initrd to boot VM")
 parser.add_option("-z", "--cmdline", dest="cmdline", type="string", help="Specify cmdline to boot VM")
@@ -62,19 +64,18 @@ parser.add_option("-H", "--listhosts", dest="listhosts", action="store_true", he
 parser.add_option("-I", "--listisos", dest="listisos", action="store_true", help="List isos")
 parser.add_option("-L", "--listclients", dest="listclients", action="store_true", help="list available clients")
 parser.add_option("-M", "--maintenance", dest="maintenance", type="string", help="Put in maintenance specified storageDomain")
+parser.add_option("-N", "--numinterfaces", dest="numinterfaces", type="int", help="Specify number of net interfaces")
+parser.add_option("-O", "--console", dest="console", action="store_true", help="Get a console")
 parser.add_option("-R", "--restart", dest="restart", action="store_true", help="Restart vm")
-parser.add_option("-S", "--start", dest="start", action="store_true", help="Start VM")
+parser.add_option("-S", "--summary", dest="summary", action="store_true", help="Summary of your ovirt setup")
 parser.add_option("-T", "--thin", dest="thin", action="store_true", help="Use thin provisioning for disk")
 parser.add_option("-V", "--listvms", dest="listvms", action="store_true", help="list all vms")
-parser.add_option("-W", "--stop", dest="stop", action="store_true", help="Stop VM")
 parser.add_option("-X", "--search" , dest="search", type="string", help="Search VMS")
 parser.add_option("-Y", "--nolaunch", dest="nolaunch", action="store_true", help="Dont Launch VM,just create it")
 parser.add_option("-Z", "--cobbler", dest="cobbler", action="store_true", help="Cobbler support")
 parser.add_option("-1", "--ip1", dest="ip1", type="string", help="Specify First IP")
 parser.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
 parser.add_option("-3", "--ip3", dest="ip3", type="string", help="Specify Third IP")
-parser.add_option("-N", "--numinterfaces", dest="numinterfaces", type="int", help="Specify number of net interfaces")
-parser.add_option("-O", "--console", dest="console", action="store_true", help="Get a console")
 
 MB = 1024*1024
 GB = 1024*MB
@@ -112,7 +113,7 @@ if memory2:memory2=memory2*MB
 restart=options.restart
 start=options.start
 stop=options.stop
-discover=options.discover
+summary=options.summary
 numcpu = options.numcpu
 thin=options.thin
 kill=options.kill
@@ -135,6 +136,7 @@ boot1,boot2="hd","network"
 numinterfaces=options.numinterfaces
 iso=options.iso
 isoquit=options.isoquit
+migrate=options.migrate
 macaddr=[]
 guestrhel332="rhel_3"
 guestrhel364="rhel_3x64"
@@ -394,7 +396,7 @@ if search:
  sys.exit(0)
 
 #REPORT 
-if discover:
+if summary:
  clusters=api.clusters.list()
  clusters=api.clusters.list()
  datacenters=api.datacenters.list()
@@ -450,6 +452,11 @@ if len(args) == 1 and not new:
    sys.exit(0)
   api.vms.get(name).stop() 
   print "VM %s stopped" % name
+ if migrate:
+  #cluster=vm.get_host().get_cluster()
+  #host should be specified
+  vm.migrate()
+  print "VM s migration launched"
  if isoquit:
   #for cdrom in vm.get_cdroms().list():
   # if cdrom.get_file():print "Cdrom: %s" % cdrom.get_file().get_id()
@@ -475,7 +482,6 @@ if len(args) == 1 and not new:
   if not isofound:
    print "Iso not available.Leaving..."
    sys.exit(1)
-  sys.exit(0)
  if boot:
   boot=boot.split(",")
   if len(boot) !=2:
