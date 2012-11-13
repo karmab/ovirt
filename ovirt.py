@@ -39,12 +39,13 @@ parser.add_option("-f", "--diskformat", dest="diskformat", type="string", help="
 parser.add_option("-g", "--guestid", dest="guestid", type="string", help="Change guestid of VM")
 parser.add_option("-i", "--iso", dest="iso", type="string", help="Specify iso to add to VM")
 parser.add_option("-l", "--listprofiles", dest="listprofiles", action="store_true", help="list available profiles")
-parser.add_option("-m", "--memory", dest="memory", type="int", help="Specify Memory, in Mo")
+parser.add_option("-m", "--memory", dest="memory2", type="int", help="Specify Memory, in Mo")
 parser.add_option("-n", "--new", dest="new",action="store_true", help="Create new VM")
 parser.add_option("-o", "--listtags", dest="listtags", action="store_true", help="List available tags")
 parser.add_option("-p", "--profile", dest="profile",type="string", help="specify Profile")
+parser.add_option("-q", "--quit", dest="isoquit", action="store_true", help="Remove iso from VM")
 parser.add_option("-r", "--reset", dest="reset", action="store_true", help="Reset kernel parameters for given VM")
-parser.add_option("-s", "--size", dest="disksize", type="int", help="Specify Disk size,in Go at VM creation")
+parser.add_option("-s", "--size", dest="disksize2", type="int", help="Specify Disk size,in Go at VM creation")
 parser.add_option("-t", "--tags", dest="tags", type="string", help="Add tags to VM")
 parser.add_option("-u", "--deletetag", dest="deletetag", type="string", help="Delete tag from VM")
 parser.add_option("-x", "--kernel", dest="kernel", type="string", help="Specify kernel to boot VM")
@@ -96,7 +97,8 @@ new=options.new
 cobbleruser=None
 cobblermac=None
 diskformat = options.diskformat
-disksize = options.disksize
+disksize2 = options.disksize2
+if disksize2:disksize2=disksize2*GB
 ip1=options.ip1
 ip2=options.ip2
 ip3=options.ip3
@@ -105,7 +107,8 @@ maintenance=options.maintenance
 kernel=options.kernel
 initrd=options.initrd
 cmdline=options.cmdline
-memory = options.memory
+memory2 = options.memory2
+if memory2:memory2=memory2*MB
 restart=options.restart
 start=options.start
 stop=options.stop
@@ -117,6 +120,7 @@ forcekill=options.forcekill
 clu=options.clu
 storagedomain=options.storagedomain
 adddisk=options.adddisk
+if adddisk:adddisk=adddisk*GB
 bad=options.bad
 cobbler=options.cobbler
 nolaunch=options.nolaunch
@@ -130,6 +134,7 @@ installnet=None
 boot1,boot2="hd","network"
 numinterfaces=options.numinterfaces
 iso=options.iso
+isoquit=options.isoquit
 macaddr=[]
 guestrhel332="rhel_3"
 guestrhel364="rhel_3x64"
@@ -210,8 +215,6 @@ def checkiso(api,iso=None):
    
  sys.exit(0)
 
-if memory:memory=memory*MB
-if adddisk:adddisk=adddisk*GB
 ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
 #thin provisioning
 sparse=True
@@ -266,8 +269,8 @@ try:
  if not clu and default.has_key("clu"):clu=default["clu"]
  if not numcpu and default.has_key("numcpu"):numcpu=int(default["numcpu"])
  if not diskformat and default.has_key("diskformat"):diskformat=default["diskformat"]
- if not disksize and default.has_key("disksize"):disksize=int(default["disksize"])*GB
- if not memory and default.has_key("memory"):memory=int(default["memory"])*MB
+ if default.has_key("disksize"):disksize=int(default["disksize"])*GB
+ if default.has_key("memory"):memory=int(default["memory"])*MB
  if not storagedomain and default.has_key("storagedomain"):storagedomain=default["storagedomain"]
  if not numinterfaces and default.has_key("numinterfaces"):numinterfaces=int(default["numinterfaces"])
  if not ossl and default.has_key("ssl"):ossl=True
@@ -285,8 +288,8 @@ try:
  if not numcpu and ovirts[client].has_key("numcpu"):numcpu=int(ovirts[client]["numcpu"])
  if ovirts[client].has_key("diskformat"):diskformat=ovirts[client]["diskformat"]
  if ovirts[client].has_key("diskinterface"):diskinterface=ovirts[client]["diskformat"]
- if not disksize and ovirts[client].has_key("disksize"):disksize=int(ovirts[client]["disksize"])*GB
- if not memory and ovirts[client].has_key("memory"):memory=int(ovirts[client]["memory"])*MB
+ if ovirts[client].has_key("disksize"):disksize=int(ovirts[client]["disksize"])*GB
+ if ovirts[client].has_key("memory"):memory=int(ovirts[client]["memory"])*MB
  if not storagedomain and ovirts[client].has_key("storagedomain"):storagedomain=ovirts[client]["storagedomain"]
  if ovirts[client].has_key("numinterfaces"):numinterfaces=int(ovirts[client]["numinterfaces"])
  if ovirts[client].has_key("netinterface"):diskinterface=ovirts[client]["netinterface"]
@@ -447,6 +450,12 @@ if len(args) == 1 and not new:
    sys.exit(0)
   api.vms.get(name).stop() 
   print "VM %s stopped" % name
+ if isoquit:
+  #for cdrom in vm.get_cdroms().list():
+  # if cdrom.get_file():print "Cdrom: %s" % cdrom.get_file().get_id()
+  vm.cdroms=None
+  vm.update()
+  print "Removed iso from VM"
  if iso:
   isofound=False
   isodomains=[]
@@ -544,9 +553,12 @@ if len(args) == 1 and not new:
    print "No Storage Domain specified"
    sys.exit(1)
   else:
+   if not disksize and not disksize2:
+    print "No Disksize specified"
+    sys.exit(1)
    storagedomain=api.storagedomains.get(name=storagedomain)
-  api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=adddisk,type_="data",status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=False))
-  print "Disk with size %d GB added" % (adddisk/1024/1024/1024)
+   api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=adddisk,type_="data",status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=False))
+   print "Disk with size %d GB added" % (adddisk/1024/1024/1024)
  if start: 
   if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
    print "VM allready started"
@@ -707,46 +719,51 @@ elif numinterfaces == 3:
 
 
 #VM CREATION IN OVIRT
-#try:
+try:
 #TODO check that clu and storagedomain exist and that there is space there
-if diskformat=="raw":sparse=False
-vm=api.vms.get(name=name)
-if vm:
- print "VM %s allready existing.Leaving..." % name
- os._exit(1)
-clu=api.clusters.get(name=clu)
-storagedomain=api.storagedomains.get(name=storagedomain)
-#boot order
-boot=[params.Boot(dev=boot1),params.Boot(dev=boot2)]
-#vm creation
-api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu))))
-#add nics
-api.vms.get(name).nics.add(params.NIC(name='nic1', network=params.Network(name=net1), interface=netinterface))
-if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='nic2', network=params.Network(name=net2), interface=netinterface))
-if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='nic3', network=params.Network(name=net3), interface=netinterface))
-if iso:
- iso=checkiso(api,iso)
- cdrom=params.CdRom(file=iso)
- api.vms.get(name).cdroms.add(cdrom)
-if tags:
- tags=tags.split(",")
- for tag in tags: 
-  for tg  in api.tags.list():
-   if tg.get_name()==tag:
-    tagfound=True
-    api.vms.get(name).tags.add(tg)
-api.vms.get(name).update()
-#add disks
-api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True))
-print "VM %s created" % name
-if cobbler:
- #retrieve MACS for cobbler
+ if memory2:memory=memory2
+ if disksize2:disksize=disksize2
+ if not memory or not disksize:
+  print "Missing memory or disk info for VM %s. Wont be created" % name
+  os._exit(1)
+ if diskformat=="raw":sparse=False
  vm=api.vms.get(name=name)
- for nic in vm.nics.list():
-  macaddr.append(nic.mac.address)
-#except:
-# print "Failure creating VM"
-# os._exit(1)
+ if vm:
+  print "VM %s allready existing.Leaving..." % name
+  os._exit(1)
+ clu=api.clusters.get(name=clu)
+ storagedomain=api.storagedomains.get(name=storagedomain)
+ #boot order
+ boot=[params.Boot(dev=boot1),params.Boot(dev=boot2)]
+ #vm creation
+ api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu))))
+ #add nics
+ api.vms.get(name).nics.add(params.NIC(name='nic1', network=params.Network(name=net1), interface=netinterface))
+ if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='nic2', network=params.Network(name=net2), interface=netinterface))
+ if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='nic3', network=params.Network(name=net3), interface=netinterface))
+ if iso:
+  iso=checkiso(api,iso)
+  cdrom=params.CdRom(file=iso)
+  api.vms.get(name).cdroms.add(cdrom)
+ if tags:
+  tags=tags.split(",")
+  for tag in tags: 
+   for tg  in api.tags.list():
+    if tg.get_name()==tag:
+     tagfound=True
+     api.vms.get(name).tags.add(tg)
+ api.vms.get(name).update()
+ #add disks
+ api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True))
+ print "VM %s created" % name
+ if cobbler:
+  #retrieve MACS for cobbler
+  vm=api.vms.get(name=name)
+  for nic in vm.nics.list():
+   macaddr.append(nic.mac.address)
+except:
+ print "Failure creating VM"
+ os._exit(1)
 
 
 #VM CREATION IN COBBLER
