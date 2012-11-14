@@ -59,6 +59,7 @@ parser.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot
 parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
 parser.add_option("-D", "--storagedomain" , dest="storagedomain", type="string", help="Specify Storage Domain")
 parser.add_option("-F", "--forcekill", dest="forcekill", action="store_true", help="Dont ask confirmation when killing a VM")
+#parser.add_option("-Q", "--hanging", dest="hanging", action="store_true", help="Check hanging tasks")
 parser.add_option("-K", "--kill", dest="kill", action="store_true" , help="specify VM to kill in virtual center.Confirmation will be asked unless -F/--forcekill flag is set.VM will also be killed in cobbler server if -Z/-cobbler flag set")
 parser.add_option("-E", "--cluster", dest="clu", type="string", help="Specify Cluster")
 parser.add_option("-H", "--listhosts", dest="listhosts", action="store_true", help="List hosts")
@@ -137,6 +138,7 @@ numinterfaces=options.numinterfaces
 iso=options.iso
 isoquit=options.isoquit
 migrate=options.migrate
+#hanging=options.hanging
 macaddr=[]
 guestrhel332="rhel_3"
 guestrhel364="rhel_3x64"
@@ -361,6 +363,9 @@ if maintenance:
  switchstoragedomain(api,maintenance,False) 
  sys.exit(0) 
 
+#if hanging:
+# print dir(api)
+# sys.exit(0) 
 
 #LIST HOSTS
 if listhosts:
@@ -603,7 +608,7 @@ if len(args) == 1 and not new:
  print "Memory: %dMb" % memory
  for disk in vm.disks.list():
    size=disk.size/1024/1024/1024
-   for stor in disk.get_storage_domains().get_storage_domain():print stor.name
+   #for stor in disk.get_storage_domains().get_storage_domain():print stor.name
    print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state())
  for nic in vm.nics.list():
   net=api.networks.get(id=nic.network.id).get_name()
@@ -747,11 +752,11 @@ try:
  #boot order
  boot=[params.Boot(dev=boot1),params.Boot(dev=boot2)]
  #vm creation
- api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu))))
+ api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu)),type_="server"))
  #add nics
- api.vms.get(name).nics.add(params.NIC(name='nic1', network=params.Network(name=net1), interface=netinterface))
- if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='nic2', network=params.Network(name=net2), interface=netinterface))
- if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='nic3', network=params.Network(name=net3), interface=netinterface))
+ api.vms.get(name).nics.add(params.NIC(name='eth0', network=params.Network(name=net1), interface=netinterface))
+ if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='eth1', network=params.Network(name=net2), interface=netinterface))
+ if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='eth2', network=params.Network(name=net3), interface=netinterface))
  if iso:
   iso=checkiso(api,iso)
   cdrom=params.CdRom(file=iso)
