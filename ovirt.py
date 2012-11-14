@@ -594,6 +594,11 @@ if len(args) == 1 and not new:
   host=findhostbyid(api,vm.get_host().get_id())
   print "Host: %s" % host
  print "Cpu: %s sockets:%s" % (vm.cpu.topology.cores,vm.cpu.topology.sockets)
+ if vm.status.state=="up":
+  for info in vm.get_statistics().list(): 
+   if info.get_description()=="CPU used by guest" or info.get_description()=="Memory used (agent)":
+    for i in info.get_values().get_value():value=i.get_datum()
+    print "%s: %s" % (info.get_description(),value)
  memory=vm.memory/1024/1024
  print "Memory: %dMb" % memory
  for disk in vm.disks.list():
