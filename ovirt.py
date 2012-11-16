@@ -641,7 +641,11 @@ if len(args) == 1 and not new:
    os.popen("qdbus org.kde.klipper /klipper setClipboardContents %s" % ticket)
   else:
    os.popen("xsel", "wb").write(ticket)
-  os.popen("echo %s | remote-viewer --spice-ca-file %s --spice-host-subject '%s' spice://%s/?port=%s\&tls-port=%s &" %  (ticket,oca,subject,address,port,sport))
+  protocol=vm.get_display().get_type()
+  if protocol=="spice":
+   os.popen("remote-viewer --spice-ca-file %s --spice-host-subject '%s' spice://%s/?port=%s\&tls-port=%s &" %  (oca,subject,address,port,sport))
+  elif protocol=="vnc":
+   os.popen("remote-viewer vnc://%s:%s &" %  (address,port))
  sys.exit(0)
 
 #parse profile for specific client
