@@ -417,7 +417,9 @@ if summary:
     print "Storage: %s Type: %s Status: %s Total space: N/A Available space:N/A" % (s.name,s.get_type(),s.get_status().get_state())
  for clu  in clusters:
   print "Cluster: %s " % clu.name
-  for net in clu.networks.list():print "Network: %s " % net.name
+  for net in clu.networks.list():
+   print "Network: %s " % net.name
+   if net.get_display():print "Set as display network"
  for h in hosts:
   #print "Host: %s Cpu: %s Memory:%sGb" % (h.name,h.cpu.name,h.memory/1024/1024/1024)
   print "Host: %s Cpu: %s" % (h.name,h.cpu.name)
