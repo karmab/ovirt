@@ -637,7 +637,7 @@ if len(args) == 1 and not new:
   subject="%s,CN=%s" % (oorg,realaddress)
   print "Password copied to clipboard:	%s" % ticket
   #copy to clipboard
-  if os.environ["KDE_FULL_SESSION"]:
+  if os.environ.has_key("KDE_FULL_SESSION") or os.environ.has_key("KDEDIRS"):
    os.popen("qdbus org.kde.klipper /klipper setClipboardContents %s" % ticket)
   else:
    os.popen("xsel", "wb").write(ticket)
