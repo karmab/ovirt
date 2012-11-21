@@ -528,7 +528,7 @@ if len(args) == 1 and not new:
   vm.update()
   print "extra cmdline correctly changed for %s" % (name)
  if tags:
-  tags=tag.split(",")
+  tags=tags.split(",")
   for tag in tags:
    tagfound=False
    for tg  in api.tags.list():
@@ -540,13 +540,13 @@ if len(args) == 1 and not new:
      sys.exit(0)
    if not tagfound:
     print "Tag not available..."
-    sure=raw_input("Do you want me to create tag %s and add it to vm %s:(y/N)" % tag,name)
+    sure=raw_input("Do you want me to create tag %s and add it to vm %s:(y/N)" % (tag,name))
     if sure!="Y":
      print "Not doing anything"
      sys.exit(1)
     tag = params.Tag(name=tag)
     api.tags.add(tag)
-    print "Tag %s added..." % (tag)
+    print "Tag %s added..." % (tag.get_name())
     vm.tags.add(tag)
     vm.update()
     print "Tag %s added to %s" % (tag,name)
