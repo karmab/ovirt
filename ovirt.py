@@ -9,6 +9,7 @@ import optparse
 import os
 import time
 import xmlrpclib
+import urllib
 import ConfigParser
 from ovirtsdk.api import API
 from ovirtsdk.xml import params
@@ -625,7 +626,7 @@ if len(args) == 1 and not new:
    print "Waiting for machine to be up..."
    time.sleep(5)
   if not oca or not os.path.exists(oca):
-   print "VDSM CA file is required in order to connect to console.Get it from /etc/pki/vdsm/cacert.pem and define its path in ovirt.ini"
+   print " CA cert file is required in order to connect to console.Get it from http://${OVIRT}/ca.crt, keep only the CERTIFICATE part and define its path in ovirt.ini"
    sys.exit(1)
   if not oorg:
    print "Define your org in ovirt.ini"
