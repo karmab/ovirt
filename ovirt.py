@@ -700,7 +700,7 @@ if not profiles.has_key(profile):
  sys.exit(0)
 
 #grab all conf from profile 
-clu=profiles[profile]["clu"]
+if profiles[profile].has_key("clu"):clu=int(profiles[profile]["clu"])
 if profiles[profile].has_key("numinterfaces"):numinterfaces=int(profiles[profile]["numinterfaces"])
 if profiles[profile].has_key("boot1"):boot1=profiles[profile]["boot1"]
 if profiles[profile].has_key("boot2"):boot2=profiles[profile]["boot2"]
