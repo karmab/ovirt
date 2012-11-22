@@ -618,6 +618,9 @@ if len(args) == 1 and not new:
   print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,net,nic.interface)
  for tag in vm.get_tags().list():
    print "Tags: %s" % tag.get_name()
+ if vm.get_custom_properties():
+  for custom in vm.get_custom_properties().get_custom_property():
+   print "Custom Property: %s Value: %s" % (custom.get_name(),custom.get_value())
  if console:
   if vm.status.state=="down":
    print "Machine down"
