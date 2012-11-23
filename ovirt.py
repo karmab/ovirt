@@ -78,6 +78,7 @@ parser.add_option("-Z", "--cobbler", dest="cobbler", action="store_true", help="
 parser.add_option("-1", "--ip1", dest="ip1", type="string", help="Specify First IP")
 parser.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
 parser.add_option("-3", "--ip3", dest="ip3", type="string", help="Specify Third IP")
+parser.add_option("-4", "--runonce", dest="runonce", action="store_true", help="Runonce VM.you will need to pass kernel,initrd and cmdline")
 
 MB = 1024*1024
 GB = 1024*MB
@@ -114,6 +115,7 @@ memory2 = options.memory2
 if memory2:memory2=memory2*MB
 restart=options.restart
 start=options.start
+runonce=options.runonce
 stop=options.stop
 summary=options.summary
 numcpu = options.numcpu
@@ -419,8 +421,10 @@ if summary:
  for clu  in clusters:
   print "Cluster: %s " % clu.name
   for net in clu.networks.list():
-   print "Network: %s " % net.name
-   if net.get_display():print "Set as display network"
+   if net.get_display():
+    print "Network: %s  (Set as display network)" % net.name
+   else:
+    print "Network: %s " % net.name
  for h in hosts:
   #print "Host: %s Cpu: %s Memory:%sGb" % (h.name,h.cpu.name,h.memory/1024/1024/1024)
   print "Host: %s Cpu: %s" % (h.name,h.cpu.name)
@@ -432,6 +436,19 @@ if len(args) == 1 and not new:
  if not vm:
   print "VM %s not found.Leaving..." % name
   sys.exit(1)
+ if runonce:
+  if not kernel or not initrd or not cmdline:
+   print "Missing parameters to runonce"
+   sys.exit(0)
+  if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
+   print "VM allready started"
+  else:
+   os=params.OperatingSystem(kernel=kernel,initrd=initrd, cmdline=cmdline)
+   #os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline)
+   action=params.Action(os)
+   api.vms.get(name).start(action)
+   print "VM %s started in runonce mode" % name
+  sys.exit(0)
  if kill:
   if cobbler:
    s = xmlrpclib.Server("http://%s/cobbler_api" % cobblerhost)
@@ -577,7 +594,7 @@ if len(args) == 1 and not new:
   if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
    print "VM allready started"
   else:
-   api.vms.get(name).start() 
+   api.vms.get(name).start()
    print "VM %s started" % name
  if restart:
   if api.vms.get(name).status.state!="down":api.vms.get(name).stop() 
