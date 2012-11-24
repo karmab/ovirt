@@ -444,7 +444,7 @@ if len(args) == 1 and not new:
    print "VM allready started"
   else:
    os=params.OperatingSystem(type_=vm.os.type_,boot=vm.os.boot,kernel=kernel,initrd=initrd,cmdline=cmdline)
-   api.vms.get(name).start(params.Action(os))
+   api.vms.get(name).start(action=params.Action(os))
    print "VM %s started in runonce mode" % name
   sys.exit(0)
  if kill:
