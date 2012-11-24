@@ -303,6 +303,7 @@ try:
  if ovirts[client].has_key("ssl"):ossl=True
  if ovirts[client].has_key("ca"):oca=ovirts[client]["ca"]
  if ovirts[client].has_key("org"):oorg=ovirts[client]["org"]
+ #if ovirts[client].has_key("runonce"):runonce=True
 except KeyError,e:
  print "Problem parsing your ini file:Missing parameter %s" % e
  os._exit(1)
@@ -436,7 +437,7 @@ if len(args) == 1 and not new:
  if not vm:
   print "VM %s not found.Leaving..." % name
   sys.exit(1)
- if runonce:
+ if runonce and not new:
   if not kernel or not initrd or not cmdline:
    print "Missing parameters to runonce"
    sys.exit(0)
@@ -733,6 +734,7 @@ if not tags and profiles[profile].has_key("tags"):tags=profiles[profile]["tags"]
 if not kernel and profiles[profile].has_key("kernel"):kernel=profiles[profile]["kernel"]
 if not initrd and profiles[profile].has_key("initrd"):initrd=profiles[profile]["initrd"]
 if not cmdline and profiles[profile].has_key("cmdline"):cmdline=profiles[profile]["cmdline"]
+if not runonce and profiles[profile].has_key("runonce"):runonce=True
 
 if extra:cmdline="%s %s" %(cmdline,extra)
 #grab nets 
@@ -778,6 +780,10 @@ try:
  #boot order
  boot=[params.Boot(dev=boot1),params.Boot(dev=boot2)]
  #vm creation
+ #if runonce specified,dont put kernelopts in VM definition, but rather at launch time
+ if runonce:
+  kernel2,initrd2,cmdline2=kernel,initrd,cmdline 
+  kernel,initrd,cmdline=None,None,None
  api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu)),type_="server"))
  #add nics
  api.vms.get(name).nics.add(params.NIC(name='eth0', network=params.Network(name=net1), interface=netinterface))
@@ -877,6 +883,9 @@ if cobbler:
  s.sync(token)
  print "VM %s created in cobbler" % name
 
+if nolaunch and runonce:
+ print "Both runonce and nolaunch specified for VM...nonsense!"
+ sys.exit(0)
 if not nolaunch:
  while api.vms.get(name).status.state =="image_locked":
   print "Waiting For image to be unlocked..."
@@ -886,7 +895,12 @@ if not nolaunch:
    print "disk still in %s state" % disk.get_status().get_state()
    time.sleep(5) 
  #at this point,VM is ready to be started
- api.vms.get(name).start()
+ if runonce:
+  action=params.Action()
+  action.vm=params.VM(os=params.OperatingSystem(kernel=kernel2,initrd=initrd2,cmdline=cmdline2))
+  api.vms.get(name).start(action=action)
+ else:
+  api.vms.get(name).start()
  print "VM %s started" % name
 
 sys.exit(0)
