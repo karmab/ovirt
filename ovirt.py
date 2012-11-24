@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """
 script to create virtual machines on ovirt/rhev
-used some samples from https://access.redhat.com/knowledge/docs/en-US/Red_Hat_Enterprise_Virtualization/3.1-Beta/html/Developer_Guide/Example_Attaching_an_ISO_Image_to_a_Virtual_Machine_using_Python.html
+used some samples from https://access.redhat.com/knowledge/docs/en-US/Red_Hat_Enterprise_Virtualization/3.1-Beta/html/Developer_Guide/Example_Attaching_an_ISO_Image_to_a_Virtual_Machine_using_Python.html and the http://markmc.fedorapeople.org/rhevm-api/en-US/html/
 """
 
 import sys
@@ -443,8 +443,9 @@ if len(args) == 1 and not new:
   if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
    print "VM allready started"
   else:
-   os=params.OperatingSystem(type_=vm.os.type_,boot=vm.os.boot,kernel=kernel,initrd=initrd,cmdline=cmdline)
-   api.vms.get(name).start(action=params.Action(os))
+   vm2=params.VM(name=name, memory=vm.memory, cluster=vm.get_cluster(), template=vm.get_template(),os=params.OperatingSystem(type_=vm.os.type_,boot=vm.os.boot,kernel=kernel,initrd=initrd,cmdline=cmdline),cpu=vm.cpu,type_="server")
+   action=params.Action(vm2)
+   api.vms.get(name).start(action=action)
    print "VM %s started in runonce mode" % name
   sys.exit(0)
  if kill:
@@ -477,7 +478,7 @@ if len(args) == 1 and not new:
   print "VM %s stopped" % name
  if migrate:
   #cluster=vm.get_host().get_cluster()
-  #host should be specified
+  #host should be specified with name=hostname or id=hostid
   vm.migrate()
   print "VM s migration launched"
  if isoquit:
