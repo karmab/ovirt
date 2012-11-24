@@ -443,11 +443,9 @@ if len(args) == 1 and not new:
   if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
    print "VM allready started"
   else:
-   os=params.OperatingSystem()
-   vm2=params.VM(os=os)
-   vm2.os.kernel,vm2.os.initrd,vm2.os.cmdline=kernel,initrd,cmdline
-   #action=params.Action(params.VM(os=params.OperatingSystem(kernel=kernel,initrd=initrd,cmdline=cmdline)))
-   api.vms.get(name).start(action=params.Action(vm2))
+   action=params.Action()
+   action.vm=params.VM(os=params.OperatingSystem(kernel=kernel,initrd=initrd,cmdline=cmdline))
+   api.vms.get(name).start(action=action)
    print "VM %s started in runonce mode" % name
   sys.exit(0)
  if kill:
