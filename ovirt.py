@@ -443,10 +443,11 @@ if len(args) == 1 and not new:
   if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
    print "VM allready started"
   else:
-   os=params.OperatingSystem(kernel=kernel,initrd=initrd, cmdline=cmdline)
-   #os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline)
+   print kernel,initrd,cmdline
+   os=params.OperatingSystem(type_=vm.os.type_,boot=vm.os.boot,kernel=kernel,initrd=initrd,cmdline=cmdline)
+   #parvm=params.VM(name=vm.name, memory=vm.memory, cluster=vm.get_cluster(), template=vm.get_template(),os=os,cpu=vm.cpu,type_=vm.get_type())
    action=params.Action(os)
-   api.vms.get(name).start(action)
+   api.vms.get(name).start(action=action)
    print "VM %s started in runonce mode" % name
   sys.exit(0)
  if kill:
