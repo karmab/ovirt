@@ -79,6 +79,7 @@ parser.add_option("-1", "--ip1", dest="ip1", type="string", help="Specify First 
 parser.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
 parser.add_option("-3", "--ip3", dest="ip3", type="string", help="Specify Third IP")
 parser.add_option("-4", "--runonce", dest="runonce", action="store_true", help="Runonce VM.you will need to pass kernel,initrd and cmdline")
+parser.add_option("-5", "--switchclient", dest="switchclient", type="string", help="Switch default client")
 
 MB = 1024*1024
 GB = 1024*MB
@@ -93,6 +94,7 @@ reset = options.reset
 client = options.client
 guestid = options.guestid
 listclients = options.listclients
+switchclient = options.switchclient
 listisos = options.listisos
 listhosts = options.listhosts
 listvms = options.listvms
@@ -262,6 +264,21 @@ if listclients:
  for cli in  sorted(ovirts):
   print cli
  print "Current default client is: %s" % (default["client"])
+ sys.exit(0)
+
+if switchclient:
+ if switchclient not in ovirts.keys():
+  print "Client not defined...Leaving"
+ else: 
+  mod = open(ovirtconffile).readlines()
+  f=open(ovirtconffile,"w")
+  for line in mod:
+   if line.startswith("client"):
+    f.write("client=%s\n" % switchclient)
+   else:
+    f.write(line)
+  f.close() 
+  print "Default Client set to %s" % (switchclient)
  sys.exit(0)
 
 if not client:
@@ -720,7 +737,7 @@ if not profiles.has_key(profile):
  sys.exit(0)
 
 #grab all conf from profile 
-if profiles[profile].has_key("clu"):clu=int(profiles[profile]["clu"])
+if profiles[profile].has_key("clu"):clu=profiles[profile]["clu"]
 if profiles[profile].has_key("numinterfaces"):numinterfaces=int(profiles[profile]["numinterfaces"])
 if profiles[profile].has_key("boot1"):boot1=profiles[profile]["boot1"]
 if profiles[profile].has_key("boot2"):boot2=profiles[profile]["boot2"]
