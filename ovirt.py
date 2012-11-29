@@ -604,6 +604,7 @@ if len(args) == 1 and not new:
    if not disksize and not disksize2:
     print "No Disksize specified"
     sys.exit(1)
+   if diskformat=="raw":sparse=False
    storagedomain=api.storagedomains.get(name=storagedomain)
    api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=adddisk,type_="data",status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=False))
    print "Disk with size %d GB added" % (adddisk/1024/1024/1024)
