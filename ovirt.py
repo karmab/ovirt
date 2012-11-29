@@ -633,8 +633,10 @@ if len(args) == 1 and not new:
   sys.exit(1)
  print "Name: %s" % vm.name
  print "Uid: %s" % vm.get_id()
- hostid=vm.get_host().get_id()
- print "Host: %s" % api.hosts.get(id=hostid).get_name()
+ host=vm.get_host()
+ if host:
+  hostid=host.get_id()
+  print "Host: %s" % api.hosts.get(id=hostid).get_name()
  print "Boot1: %s" % (vm.os.boot[0].get_dev())
  if len(vm.os.boot)==2:
   print "Boot2: %s" % (vm.os.boot[1].get_dev())
