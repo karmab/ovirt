@@ -40,6 +40,7 @@ parser.add_option("-f", "--diskformat", dest="diskformat", type="string", help="
 parser.add_option("-g", "--guestid", dest="guestid", type="string", help="Change guestid of VM")
 parser.add_option("-i", "--iso", dest="iso", type="string", help="Specify iso to add to VM")
 parser.add_option("-j", "--migrate", dest="migrate", action="store_true", help="Migrate VM")
+parser.add_option("-k", "--host", dest="host", type="string", help="Host to use when migrating a VM")
 parser.add_option("-l", "--listprofiles", dest="listprofiles", action="store_true", help="list available profiles")
 parser.add_option("-m", "--memory", dest="memory2", type="int", help="Specify Memory, in Mo")
 parser.add_option("-n", "--new", dest="new",action="store_true", help="Create new VM")
@@ -96,6 +97,7 @@ guestid = options.guestid
 listclients = options.listclients
 switchclient = options.switchclient
 listisos = options.listisos
+host = options.host
 listhosts = options.listhosts
 listvms = options.listvms
 listprofiles = options.listprofiles
@@ -497,7 +499,14 @@ if len(args) == 1 and not new:
  if migrate:
   #cluster=vm.get_host().get_cluster()
   #host should be specified with name=hostname or id=hostid
-  vm.migrate()
+  if host:
+   host=api.hosts.get(name=host)
+   if host:
+    action=params.Action()
+    action.host=host
+    vm.migrate(action=action)
+  else:
+   vm.migrate()
   print "VM s migration launched"
  if isoquit:
   #for cdrom in vm.get_cdroms().list():
@@ -624,6 +633,8 @@ if len(args) == 1 and not new:
   sys.exit(1)
  print "Name: %s" % vm.name
  print "Uid: %s" % vm.get_id()
+ hostid=vm.get_host().get_id()
+ print "Host: %s" % api.hosts.get(id=hostid).get_name()
  print "Boot1: %s" % (vm.os.boot[0].get_dev())
  if len(vm.os.boot)==2:
   print "Boot2: %s" % (vm.os.boot[1].get_dev())
