@@ -467,8 +467,6 @@ if len(args) == 1 and not new:
     iso=checkiso(api,iso)
     vmrunonce=params.VM(os=params.OperatingSystem())
     vmrunonce.cdroms=params.CdRom(file=iso)
-    #cdrom=params.CdRom(vm=vmrunonce,file=iso)
-    #vmrunonce.cdroms.add(cdrom)
     boot1 = params.Boot(dev="cdrom")
     boot2 = params.Boot(dev=None)
     vmrunonce.os.boot=[boot1,boot2]
@@ -491,6 +489,9 @@ if len(args) == 1 and not new:
    else:
     print "No special options passed for runonce.Leaving..."
     sys.exit(0)
+   for b in action.vm.os.boot:print b.get_dev()
+   print action.vm.cdroms.get_file().get_name()
+   sys.exit(0)
    api.vms.get(name).start(action=action)
    print "VM %s started in runonce mode" % name
   sys.exit(0)
@@ -535,7 +536,7 @@ if len(args) == 1 and not new:
    vm.migrate()
   print "VM s migration launched"
  if isoquit:
-  vm.cdroms=params.CdRom()
+  for cd in vm.cdroms.list():cd.delete()
   vm.update()
   print "Removed iso from VM"
  if iso:
