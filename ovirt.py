@@ -465,12 +465,9 @@ if len(args) == 1 and not new:
     action.vm=params.VM(os=params.OperatingSystem(kernel=kernel,initrd=initrd,cmdline=cmdline))
    elif iso:
     iso=checkiso(api,iso)
-    vmrunonce=params.VM(os=params.OperatingSystem())
-    vmrunonce.cdroms=params.CdRom(file=iso)
     boot1 = params.Boot(dev="cdrom")
-    boot2 = params.Boot(dev=None)
-    vmrunonce.os.boot=[boot1,boot2]
-    action.vm=vmrunonce
+    boot2 = params.Boot(dev="hd")
+    action.vm=params.VM(os=params.OperatingSystem(boot=[boot1,boot2]),cdroms=params.CdRom(file=iso))
    elif boot:
     boot=boot.split(",")
     if len(boot) !=2:
@@ -485,13 +482,10 @@ if len(args) == 1 and not new:
      sys.exit(1)
     boot1 = params.Boot(dev=boot1)
     boot2 = params.Boot(dev=boot2)
-    action.vm=params.VM(os=params.OperatingSystem(type_=guestid,boot=[boot1,boot2]))
+    action.vm=params.VM(os=params.OperatingSystem(boot=[boot1,boot2]))
    else:
     print "No special options passed for runonce.Leaving..."
     sys.exit(0)
-   for b in action.vm.os.boot:print b.get_dev()
-   print action.vm.cdroms.get_file().get_name()
-   sys.exit(0)
    api.vms.get(name).start(action=action)
    print "VM %s started in runonce mode" % name
   sys.exit(0)
