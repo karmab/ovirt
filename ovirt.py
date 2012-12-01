@@ -468,8 +468,10 @@ if len(args) == 1 and not new:
     boot1 = params.Boot(dev="cdrom")
     boot2 = params.Boot(dev="hd")
     cdrom=params.CdRom(file=iso)
-    action.vm=params.VM(os=params.OperatingSystem(boot=[boot1,boot2]),cdroms=vm.cdroms)
-    action.vm.cdroms.add(cdrom)
+    #action.vm=params.VM(os=params.OperatingSystem(boot=[boot1,boot2]),cdroms=vm.cdroms)
+    action.vm=params.VM(os=params.OperatingSystem(boot=[boot1,boot2]))
+    action.vm.cdroms=cdrom
+    #action.vm.cdroms.add(cdrom)
    elif boot:
     boot=boot.split(",")
     if len(boot) !=2:
