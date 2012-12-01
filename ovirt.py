@@ -464,43 +464,30 @@ if len(args) == 1 and not new:
    if kernel and initrd and cmdline:
     action.vm=params.VM(os=params.OperatingSystem(kernel=kernel,initrd=initrd,cmdline=cmdline))
    elif iso:
-    #action for cdrom 
-    isofound=False
-    isodomains=[]
-    for sd in api.storagedomains.list():
-     if sd.get_type()=="iso":isodomains.append(sd)
-    if len(isodomains)==0:
-     print "No iso domain found.Leaving..."
+    iso=checkiso(api,iso)
+    vmrunonce=params.VM(os=params.OperatingSystem())
+    vmrunonce.cdroms=params.CdRom(file=iso)
+    #cdrom=params.CdRom(vm=vmrunonce,file=iso)
+    #vmrunonce.cdroms.add(cdrom)
+    boot1 = params.Boot(dev="cdrom")
+    boot2 = params.Boot(dev=None)
+    vmrunonce.os.boot=[boot1,boot2]
+    action.vm=vmrunonce
+   elif boot:
+    boot=boot.split(",")
+    if len(boot) !=2:
+     print "You must provide 2 boot options separated by commas"
      sys.exit(1)
-    for sd in isodomains:
-     for f in sd.files.list():
-      if f.get_id()==iso: 
-       isofound=True
-       action.vm=params.VM(os=params.OperatingSystem())
-       cdrom=params.CdRom(file=f)
-       action.vm.cdroms=cdrom
-       boot1 = params.Boot(dev="cdrom")
-       boot2 = params.Boot(dev="hd")
-       action.vm.os.boot = [ boot1, boot2 ]
-    if not isofound:
-     print "Iso not available.Leaving..."
+    boot1,boot2=boot[0],boot[1]
+    if boot1==boot2:
+     print "Same boot options provided"
      sys.exit(1)
-#   elif boot:
-#    boot=boot.split(",")
-#    if len(boot) !=2:
-#     print "You must provide 2 boot options separated by commas"
-#     sys.exit(1)
-#    boot1,boot2=boot[0],boot[1]
-#    if boot1==boot2:
-#     print "Same boot options provided"
-#     sys.exit(1)
-#    if boot1 not in ["hd","cdrom","network"] or boot2 not in ["hd","cdrom","network"]:
-#     print "incorrect boot options provided.Leaving..."
-#     sys.exit(1)
-#    boot1 = params.Boot(dev=boot1)
-#    boot2 = params.Boot(dev=boot2)
-#    action.vm=params.VM()
-#    action.vm.os.boot = [ boot1, boot2 ]
+    if boot1 not in ["hd","cdrom","network"] or boot2 not in ["hd","cdrom","network"]:
+     print "incorrect boot options provided.Leaving..."
+     sys.exit(1)
+    boot1 = params.Boot(dev=boot1)
+    boot2 = params.Boot(dev=boot2)
+    action.vm=params.VM(os=params.OperatingSystem(type_=guestid,boot=[boot1,boot2]))
    else:
     print "No special options passed for runonce.Leaving..."
     sys.exit(0)
