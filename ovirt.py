@@ -469,7 +469,7 @@ if len(args) == 1 and not new:
     boot2 = params.Boot(dev="hd")
     cdrom=params.CdRom(file=iso)
     vm.cdroms.add(cdrom)
-    vm-update()
+    vm.update()
     action.vm=params.VM(os=params.OperatingSystem(boot=[boot1,boot2]))
    elif boot:
     boot=boot.split(",")
