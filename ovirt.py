@@ -57,7 +57,7 @@ parser.add_option("-x", "--kernel", dest="kernel", type="string", help="Specify 
 parser.add_option("-y", "--initrd", dest="initrd", type="string", help="Specify initrd to boot VM")
 parser.add_option("-z", "--cmdline", dest="cmdline", type="string", help="Specify cmdline to boot VM")
 parser.add_option("-A", "--activate", dest="activate", type="string", help="Activate specified storageDomain")
-parser.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom")
+parser.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom.If you only provivde one options, second boot option will be set to None")
 parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
 parser.add_option("-D", "--storagedomain" , dest="storagedomain", type="string", help="Specify Storage Domain")
 parser.add_option("-F", "--forcekill", dest="forcekill", action="store_true", help="Dont ask confirmation when killing a VM")
@@ -468,20 +468,20 @@ if len(args) == 1 and not new:
     boot1 = params.Boot(dev="cdrom")
     boot2 = params.Boot(dev="hd")
     cdrom=params.CdRom(file=iso)
-    #action.vm=params.VM(os=params.OperatingSystem(boot=[boot1,boot2]),cdroms=vm.cdroms)
+    vm.cdroms.add(cdrom)
+    vm-update()
     action.vm=params.VM(os=params.OperatingSystem(boot=[boot1,boot2]))
-    action.vm.cdroms=cdrom
-    #action.vm.cdroms.add(cdrom)
    elif boot:
     boot=boot.split(",")
+    boot1=boot[0]
     if len(boot) !=2:
-     print "You must provide 2 boot options separated by commas"
-     sys.exit(1)
-    boot1,boot2=boot[0],boot[1]
+     boot2=None
+    else:
+     boot2=boot[1]
     if boot1==boot2:
      print "Same boot options provided"
      sys.exit(1)
-    if boot1 not in ["hd","cdrom","network"] or boot2 not in ["hd","cdrom","network"]:
+    if boot1 not in ["hd","cdrom","network"] or boot2 not in ["hd","cdrom","network",None]:
      print "incorrect boot options provided.Leaving..."
      sys.exit(1)
     boot1 = params.Boot(dev=boot1)
@@ -522,8 +522,6 @@ if len(args) == 1 and not new:
   api.vms.get(name).stop() 
   print "VM %s stopped" % name
  if migrate:
-  #cluster=vm.get_host().get_cluster()
-  #host should be specified with name=hostname or id=hostid
   if host:
    host=api.hosts.get(name=host)
    if host:
@@ -558,14 +556,15 @@ if len(args) == 1 and not new:
    sys.exit(1)
  if boot:
   boot=boot.split(",")
+  boot1=boot[0]
   if len(boot) !=2:
-   print "You must provide 2 boot options separated by commas"
-   sys.exit(1)
-  boot1,boot2=boot[0],boot[1]
+   boot2=None
+  else:
+   boot2=boot[1]
   if boot1==boot2:
    print "Same boot options provided"
    sys.exit(1)
-  if boot1 not in ["hd","cdrom","network"] or boot2 not in ["hd","cdrom","network"]:
+  if boot1 not in ["hd","cdrom","network"] or boot2 not in ["hd","cdrom","network",None]:
    print "incorrect boot options provided.Leaving..."
    sys.exit(1)
   boot1 = params.Boot(dev=boot1)
