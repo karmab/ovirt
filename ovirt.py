@@ -476,31 +476,31 @@ if len(args) == 1 and not new:
      for f in sd.files.list():
       if f.get_id()==iso: 
        isofound=True
-       cdrom=params.CdRom(vm=vm,file=f)
-       action.vm=params.VM()
-       action.vm.cdroms.add(cdrom)
+       action.vm=params.VM(os=params.OperatingSystem())
+       cdrom=params.CdRom(file=f)
+       action.vm.cdroms=cdrom
        boot1 = params.Boot(dev="cdrom")
        boot2 = params.Boot(dev="hd")
        action.vm.os.boot = [ boot1, boot2 ]
     if not isofound:
      print "Iso not available.Leaving..."
      sys.exit(1)
-   elif boot:
-    boot=boot.split(",")
-    if len(boot) !=2:
-     print "You must provide 2 boot options separated by commas"
-     sys.exit(1)
-    boot1,boot2=boot[0],boot[1]
-    if boot1==boot2:
-     print "Same boot options provided"
-     sys.exit(1)
-    if boot1 not in ["hd","cdrom","network"] or boot2 not in ["hd","cdrom","network"]:
-     print "incorrect boot options provided.Leaving..."
-     sys.exit(1)
-    boot1 = params.Boot(dev=boot1)
-    boot2 = params.Boot(dev=boot2)
-    action.vm=params.VM()
-    action.vm.os.boot = [ boot1, boot2 ]
+#   elif boot:
+#    boot=boot.split(",")
+#    if len(boot) !=2:
+#     print "You must provide 2 boot options separated by commas"
+#     sys.exit(1)
+#    boot1,boot2=boot[0],boot[1]
+#    if boot1==boot2:
+#     print "Same boot options provided"
+#     sys.exit(1)
+#    if boot1 not in ["hd","cdrom","network"] or boot2 not in ["hd","cdrom","network"]:
+#     print "incorrect boot options provided.Leaving..."
+#     sys.exit(1)
+#    boot1 = params.Boot(dev=boot1)
+#    boot2 = params.Boot(dev=boot2)
+#    action.vm=params.VM()
+#    action.vm.os.boot = [ boot1, boot2 ]
    else:
     print "No special options passed for runonce.Leaving..."
     sys.exit(0)
@@ -548,9 +548,7 @@ if len(args) == 1 and not new:
    vm.migrate()
   print "VM s migration launched"
  if isoquit:
-  #for cdrom in vm.get_cdroms().list():
-  # if cdrom.get_file():print "Cdrom: %s" % cdrom.get_file().get_id()
-  vm.cdroms=None
+  vm.cdroms=params.CdRom()
   vm.update()
   print "Removed iso from VM"
  if iso:
