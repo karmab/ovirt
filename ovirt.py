@@ -30,7 +30,7 @@ ERR_CLIENTNOPROFILE="Missing client file in your home directory.Check documentat
 
 usage="script to create virtual machines on ovirt/rhev"
 version="1.8"
-parser = optparse.OptionParser("Usage: %prog [options] vmname")
+parser = optparse.OptionParser("Usage: %prog [options] vmname",version=version)
 creationgroup = optparse.OptionGroup(parser, "Creation options")
 creationgroup.add_option("-b", "--bad", dest="bad",action="store_true", help="If set,treat all actions as not for a linux guest,meaning net interfaces will be of type e1000 and disk of type ide.Necessary for windows or solaris guests")
 creationgroup.add_option("-c", "--cpu", dest="numcpu", type="int", help="Specify Number of CPUS")
