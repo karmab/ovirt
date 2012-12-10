@@ -484,6 +484,7 @@ if template:
   template=templates[choosen] 
   clu=template.get_cluster()
  api.vms.add(params.VM(name=name,cluster=clu,template=template))
+ print "VM %s deployed from %s" % (name,choosen)
  sys.exit(0)
 
 
