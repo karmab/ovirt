@@ -467,11 +467,14 @@ if summary:
 
 if template: 
  templates={}
- print "Existing Templates"
+ print "Existing Templates:"
  for temp in api.templates.list():
   if temp.get_name()=="Blank":continue
   print temp.get_name()
   templates[temp.get_name()]=temp
+ if len(templates)==0 :
+  print "No Templates found.leaving..."
+  sys.exit(1)
  choosen=raw_input("Select template to deploy VM from:\n")
  if not templates.has_key(choosen):
   print "Template not found.leaving..."
