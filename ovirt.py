@@ -69,6 +69,7 @@ actiongroup.add_option("-B", "--boot", dest="boot", type="string", help="Specify
 actiongroup.add_option("-K", "--kill", dest="kill", action="store_true" , help="specify VM to kill in virtual center.Confirmation will be asked unless -F/--forcekill flag is set.VM will also be killed in cobbler server if -Z/-cobbler flag set")
 actiongroup.add_option("-F", "--forcekill", dest="forcekill", action="store_true", help="Dont ask confirmation when killing a VM")
 actiongroup.add_option("-4", "--runonce", dest="runonce", action="store_true", help="Runonce VM.you will need to pass kernel,initrd and cmdline")
+actiongroup.add_option("-5", "--template", dest="template", type="string", help="Deploy VM from template")
 parser.add_option_group(actiongroup)
 
 listinggroup = optparse.OptionGroup(parser, "Listing options")
@@ -92,7 +93,7 @@ parser.add_option("-C", "--client", dest="client", type="string", help="Specify 
 parser.add_option("-M", "--maintenance", dest="maintenance", type="string", help="Put in maintenance specified storageDomain")
 parser.add_option("-S", "--summary", dest="summary", action="store_true", help="Summary of your ovirt setup")
 parser.add_option("-X", "--search" , dest="search", type="string", help="Search VMS")
-parser.add_option("-5", "--switchclient", dest="switchclient", type="string", help="Switch default client")
+parser.add_option("-9", "--switchclient", dest="switchclient", type="string", help="Switch default client")
 
 MB = 1024*1024
 GB = 1024*MB
@@ -157,6 +158,7 @@ numinterfaces=options.numinterfaces
 iso=options.iso
 isoquit=options.isoquit
 migrate=options.migrate
+template=options.template
 #hanging=options.hanging
 macaddr=[]
 guestrhel332="rhel_3"
@@ -461,6 +463,26 @@ if summary:
   #print "Host: %s Cpu: %s Memory:%sGb" % (h.name,h.cpu.name,h.memory/1024/1024/1024)
   print "Host: %s Cpu: %s" % (h.name,h.cpu.name)
  sys.exit(0)
+
+
+if template: 
+ templates={}
+ print "Existing Templates"
+ for temp in api.templates.list():
+  if temp.get_name()=="Blank":continue
+  print temp.get_name()
+  templates[temp.get_name()]=temp
+ choosen=raw_input("Select template to deploy VM from:\n")
+ if not templates.has_key(choosen):
+  print "Template not found.leaving..."
+  sys.exit(1)
+ else:
+  name=template
+  template=templates[choosen] 
+  clu=template.get_cluster()
+ api.vms.add(params.VM(name=name,cluster=clu,template=template))
+ sys.exit(0)
+
 
 if len(args) == 1 and not new:
  name=args[0]
