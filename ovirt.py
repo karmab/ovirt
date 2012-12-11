@@ -439,6 +439,7 @@ if search:
 
 #REPORT 
 if summary:
+ nodcs=[]
  clusters=api.clusters.list()
  clusters=api.clusters.list()
  datacenters=api.datacenters.list()
@@ -453,6 +454,9 @@ if summary:
    else:
     print "Storage: %s Type: %s Status: %s Total space: N/A Available space:N/A" % (s.name,s.get_type(),s.get_status().get_state())
   for clu  in clusters:
+   if not clu.get_data_center():
+    if clu not in nodcs:nodcs.append(clu)
+    continue
    cludc=api.datacenters.get(id=clu.get_data_center().get_id()).get_name()
    if cludc != ds.get_name():continue
    print "Cluster: %s" % (clu.name)
@@ -466,6 +470,19 @@ if summary:
     cluh=api.clusters.get(id=h.get_cluster().get_id()).get_name()
     if cluh == clu.name:print "Host: %s Cpu: %s" % (h.name,h.cpu.name)
   print "\n" 
+ #handles clusters with no associated DC
+ if len(nodcs)>0:
+  print "Datacenter: N/A"
+  for clu in nodcs:
+   print "Cluster: %s" % (clu.name)
+   for net in clu.networks.list():
+    if net.get_display():
+     print "Network: %s  (Set as display network)" % net.name
+    else:
+     print "Network: %s " % net.name
+   for h in hosts:
+    cluh=api.clusters.get(id=h.get_cluster().get_id()).get_name()
+    if cluh == clu.name:print "Host: %s Cpu: %s" % (h.name,h.cpu.name)
  sys.exit(0)
 
 
