@@ -452,16 +452,20 @@ if summary:
     print "Storage: %s Type: %s Status: %s Total space: %sGb Available space:%sGb" % (s.name,s.get_type(),s.get_status().get_state(),used+available,available)
    else:
     print "Storage: %s Type: %s Status: %s Total space: N/A Available space:N/A" % (s.name,s.get_type(),s.get_status().get_state())
- for clu  in clusters:
-  print "Cluster: %s " % clu.name
-  for net in clu.networks.list():
-   if net.get_display():
-    print "Network: %s  (Set as display network)" % net.name
-   else:
-    print "Network: %s " % net.name
- for h in hosts:
-  #print "Host: %s Cpu: %s Memory:%sGb" % (h.name,h.cpu.name,h.memory/1024/1024/1024)
-  print "Host: %s Cpu: %s" % (h.name,h.cpu.name)
+  for clu  in clusters:
+   cludc=api.datacenters.get(id=clu.get_data_center().get_id()).get_name()
+   if cludc != ds.get_name():continue
+   print "Cluster: %s" % (clu.name)
+   for net in clu.networks.list():
+    if net.get_display():
+     print "Network: %s  (Set as display network)" % net.name
+    else:
+     print "Network: %s " % net.name
+   for h in hosts:
+    #print "Host: %s Cpu: %s Memory:%sGb" % (h.name,h.cpu.name,h.memory/1024/1024/1024)
+    cluh=api.clusters.get(id=h.get_cluster().get_id()).get_name()
+    if cluh == clu.name:print "Host: %s Cpu: %s" % (h.name,h.cpu.name)
+  print "\n" 
  sys.exit(0)
 
 
