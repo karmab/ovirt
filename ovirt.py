@@ -486,28 +486,24 @@ if summary:
  sys.exit(0)
 
 
-if template: 
- templates={}
- print "Existing Templates:"
- for temp in api.templates.list():
-  if temp.get_name()=="Blank":continue
-  print temp.get_name()
-  templates[temp.get_name()]=temp
- if len(templates)==0 :
-  print "No Templates found.leaving..."
-  sys.exit(1)
- choosen=raw_input("Select template to deploy VM from:\n")
- if not templates.has_key(choosen):
-  print "Template not found.leaving..."
-  sys.exit(1)
+if template:
+ if len(args) != 1:
+  print "Usage:ovirt.py -5 template name"
+  sys.exit(0)
+ temp=api.templates.get(name=template)
+ if not temp:
+  print "Template %s not found..." % (template)
+  print "Existing templates:"
+  templates=api.templates.list()
+  for temp in templates:
+   if temp.get_name()!="Blank":print "%s" % (temp.get_name())
+  sys.exit(0)
  else:
-  name=template
-  template=templates[choosen] 
-  clu=template.get_cluster()
- api.vms.add(params.VM(name=name,cluster=clu,template=template))
- print "VM %s deployed from %s" % (name,choosen)
+  name=args[0]
+  clu=temp.get_cluster()
+  api.vms.add(params.VM(name=name,cluster=clu,template=temp))
+  print "VM %s deployed from %s" % (name,template)
  sys.exit(0)
-
 
 if len(args) == 1 and not new:
  name=args[0]
