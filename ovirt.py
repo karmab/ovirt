@@ -871,6 +871,8 @@ elif numinterfaces == 3:
 
 
 #VM CREATION IN OVIRT
+mac1="00:1a:4a:a8:60:11"
+ 
 try:
 #TODO check that clu and storagedomain exist and that there is space there
  if memory2:memory=memory2
@@ -894,7 +896,12 @@ try:
   kernel,initrd,cmdline=None,None,None
  api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu)),type_="server"))
  #add nics
- api.vms.get(name).nics.add(params.NIC(name='eth0', network=params.Network(name=net1), interface=netinterface))
+ if mac1:
+  mac1=params.MAC(address=mac1)
+  nic1=params.NIC(name='eth0', network=params.Network(name=net1),interface=netinterface, mac=mac1)
+ else:
+  nic1=params.NIC(name='eth0', network=params.Network(name=net1),interface=netinterface)
+ api.vms.get(name).nics.add(nic1)
  if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='eth1', network=params.Network(name=net2), interface=netinterface))
  if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='eth2', network=params.Network(name=net3), interface=netinterface))
  if iso:
