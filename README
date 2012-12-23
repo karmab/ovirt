@@ -4,7 +4,7 @@
 	    ovirt.py repository
 	    ------------------------------
 
-This script allows creation of ovirt/rhev-m virtual machines and registration in cobbler for autoinstall
+This script allows creation/stop/start/runonce/console/add disk or iso/migrate/deploy/listing from template/add tags,... for ovirt/rhev-m virtual machines ( plus creation in cobbler for pxe installs) in a multi-client way
 
 Requisites
 ------------
