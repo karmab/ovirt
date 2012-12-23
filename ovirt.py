@@ -508,7 +508,7 @@ if template:
     print "Waiting for VM to be down..."
     time.sleep(5) 
    for nic in api.vms.get(name).nics.list():
-    if not ":" in mac1:mac1="%s:%s" % (":".join(nic.mac.address.split(":")[:-1]),mac1)
+    if not ":" in mac1:mac1="%s%s" % (mac1[:-2],mac1)
     nic.mac.address=mac1
     nic.update()
     break
@@ -908,7 +908,7 @@ try:
  api.vms.get(name).nics.add(params.NIC(name='eth0', network=params.Network(name=net1), interface=netinterface))
  if mac1:
   for nic in api.vms.get(name).nics.list():
-   if not ":" in mac1:mac1="%s:%s" % (":".join(nic.mac.address.split(":")[:-1]),mac1)
+   if not ":" in mac1:mac1="%s%s" % (mac1[:-2],mac1)
    nic.mac.address=mac1
    nic.update()
    break
