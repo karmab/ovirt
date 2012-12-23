@@ -503,16 +503,17 @@ if template:
   name=args[0]
   clu=temp.get_cluster()
   api.vms.add(params.VM(name=name,cluster=clu,template=temp))
+  print "VM %s deployed from %s" % (name,template)
   if mac1:
    while api.vms.get(name).status.state!="down":
-    print "Waiting for VM to be down..."
+    print "Waiting for VM to be down to upgrade mac..."
     time.sleep(5) 
    for nic in api.vms.get(name).nics.list():
-    if not ":" in mac1:mac1="%s%s" % (mac1[:-2],mac1)
+    if not ":" in mac1:mac1="%s%s" % (nic.mac.address[:-2],mac1)
     nic.mac.address=mac1
     nic.update()
+    print "Mac updated"
     break
-  print "VM %s deployed from %s" % (name,template)
  sys.exit(0)
 
 if len(args) == 1 and not new:
@@ -908,7 +909,7 @@ try:
  api.vms.get(name).nics.add(params.NIC(name='eth0', network=params.Network(name=net1), interface=netinterface))
  if mac1:
   for nic in api.vms.get(name).nics.list():
-   if not ":" in mac1:mac1="%s%s" % (mac1[:-2],mac1)
+   if not ":" in mac1:mac1="%s%s" % (nic.mac.address[:-2],mac1)
    nic.mac.address=mac1
    nic.update()
    break
