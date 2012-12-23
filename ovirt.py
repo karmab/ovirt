@@ -45,6 +45,7 @@ creationgroup.add_option("-E", "--cluster", dest="clu", metavar="CLUSTER",type="
 creationgroup.add_option("-N", "--numinterfaces", dest="numinterfaces", type="int", help="Specify number of net interfaces")
 creationgroup.add_option("-T", "--thin", dest="thin", action="store_true", help="Use thin provisioning for disk")
 creationgroup.add_option("-Y", "--nolaunch", dest="nolaunch", action="store_true", help="Dont Launch VM,just create it")
+creationgroup.add_option("-8", "--mac1", dest="mac1", type="string", help="Specify mac to assign to first interface of vm when creating it or deploying from template.if a number is provided,only last octet of the mac will be set")
 parser.add_option_group(creationgroup)
 
 actiongroup = optparse.OptionGroup(parser, "Action options")
@@ -159,6 +160,7 @@ iso=options.iso
 isoquit=options.isoquit
 migrate=options.migrate
 template=options.template
+mac1=options.mac1
 #hanging=options.hanging
 macaddr=[]
 guestrhel332="rhel_3"
@@ -237,7 +239,6 @@ def checkiso(api,iso=None):
     print f.get_id()
    elif f.get_id()==iso:
     return f
-   
  sys.exit(0)
 
 ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
@@ -502,6 +503,15 @@ if template:
   name=args[0]
   clu=temp.get_cluster()
   api.vms.add(params.VM(name=name,cluster=clu,template=temp))
+  if mac1:
+   while api.vms.get(name).status.state!="down":
+    print "Waiting for VM to be down..."
+    time.sleep(5) 
+   for nic in api.vms.get(name).nics.list():
+    if not ":" in mac1:mac1="%s:%s" % (":".join(nic.mac.address.split(":")[:-1]),mac1)
+    nic.mac.address=mac1
+    nic.update()
+    break
   print "VM %s deployed from %s" % (name,template)
  sys.exit(0)
 
@@ -871,7 +881,6 @@ elif numinterfaces == 3:
 
 
 #VM CREATION IN OVIRT
-mac1="00:1a:4a:a8:60:11"
  
 try:
 #TODO check that clu and storagedomain exist and that there is space there
@@ -896,12 +905,13 @@ try:
   kernel,initrd,cmdline=None,None,None
  api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu)),type_="server"))
  #add nics
+ api.vms.get(name).nics.add(params.NIC(name='eth0', network=params.Network(name=net1), interface=netinterface))
  if mac1:
-  mac1=params.MAC(address=mac1)
-  nic1=params.NIC(name='eth0', network=params.Network(name=net1),interface=netinterface, mac=mac1)
- else:
-  nic1=params.NIC(name='eth0', network=params.Network(name=net1),interface=netinterface)
- api.vms.get(name).nics.add(nic1)
+  for nic in api.vms.get(name).nics.list():
+   if not ":" in mac1:mac1="%s:%s" % (":".join(nic.mac.address.split(":")[:-1]),mac1)
+   nic.mac.address=mac1
+   nic.update()
+   break
  if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='eth1', network=params.Network(name=net2), interface=netinterface))
  if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='eth2', network=params.Network(name=net3), interface=netinterface))
  if iso:
