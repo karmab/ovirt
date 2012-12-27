@@ -18,6 +18,7 @@ parser.add_option("-o", "--console", dest="console", action="store_true", help="
 parser.add_option("-w", "--stop", dest="stop", action="store_true", help="stop vm")
 parser.add_option("-H", "--host", dest="host", default="127.0.0.1",type="string", help="Server to connect to.Defaults to localhost")
 parser.add_option("-O", "--org", dest="org",type="string", help="Organisation for console mode")
+parser.add_option("-T", "--truststore", dest="truststore", default="/etc/pki/vdsm",type="string", help="Path containing cert files.Defaults to /etc/pki/vdsm")
 (options, args) = parser.parse_args()
 cert=options.cert
 host=options.host
@@ -27,9 +28,9 @@ port=options.port
 stop=options.stop
 console=options.console
 org=options.org
+truststore=options.truststore
 
 useSSL = True
-truststore = None
 s=vdscli.connect("%s:%s" % (host,port),useSSL, truststore)
 
 #check if i am spm
