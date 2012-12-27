@@ -709,8 +709,17 @@ if len(args) == 1 and not new:
   if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
    print "VM allready started"
   else:
-   api.vms.get(name).start()
-   print "VM %s started" % name
+   if host:
+    hostname=host
+    host=api.hosts.get(name=host)
+    action=params.Action()
+    placement_policy=params.VmPlacementPolicy(host=host)
+    action.vm=params.VM(placement_policy=placement_policy)
+    api.vms.get(name).start(action=action) 
+    print "VM %s started on %s" % (name,hostname)
+   else:
+    api.vms.get(name).start()
+    print "VM %s started" % name
  if restart:
   if api.vms.get(name).status.state!="down":api.vms.get(name).stop() 
   api.vms.get(name).start() 
