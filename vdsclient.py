@@ -2,6 +2,7 @@
 
 import optparse
 import os
+import re
 import sys
 sys.path.append("/usr/share/vdsm")
 from vdsm import vdscli
@@ -29,11 +30,36 @@ org=options.org
 useSSL = True
 truststore = None
 s=vdscli.connect("%s:%s" % (host,port),useSSL, truststore)
+
+#check if i am spm
+#try:
+spuid=s.getConnectedStoragePoolsList()["poollist"][0]
+if s.getSpmStatus(spuid)['spm_st']['spmStatus']:
+ spm=True
+else:
+ spm=False
+#except:
+# spm=False
+
 if listing:
  vms={}
- for vm in  s.list(True)["vmList"]:vms[vm["vmName"]]="%s on port %s" % (vm["display"],vm["displayPort"])
+ vmids=[]
+ for vm in  s.list(True)["vmList"]:
+  vms[vm["vmName"]]="%s on port %s" % (vm["display"],vm["displayPort"])
+  vmids.append(vm["vmId"])
  for vm in sorted(vms):
   print "%s using %s" % (vm,vms[vm])
+ if spm:
+  print "not running vms:"
+  sppath= "/rhev/data-center/%s/mastersd/master/vms" % spuid
+  for id in os.listdir(sppath):
+   if id in vmids:continue
+   f=open("%s/%s/%s.ovf" % (sppath,id,id))
+   regname=re.compile(".*<Name>(.*)</Name>.*")
+   for line in f.readlines():
+    m=regname.match(line)
+    if m:print m.group(1)
+   
  sys.exit(0)
 
 #once here, a vm is expected
