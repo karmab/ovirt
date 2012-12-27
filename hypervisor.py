@@ -54,19 +54,22 @@ if listing:
  if spm:
   print "not running vms:"
   sppath= "/rhev/data-center/%s/mastersd/master/vms" % spuid
-  for id in os.listdir(sppath):
-   if id in vmids:continue
-   #f=open("%s/%s/%s.ovf" % (sppath,id,id))
-   #regname=re.compile(".*<Name>(.*)</Name>.*")
-   #for line in f.readlines():
-    #m=regname.match(line)
-    #if m:print m.group(1)
-   #f.close()
-   tree = ET.parse("%s/%s/%s.ovf" % (sppath,id,id))
-   root = tree.getroot()
-   for content in root.findall('Content'):
-    name=content.findall("Name")[0].text
-    print "%s" % name   
+  if host=="127.0.0.1":
+   for id in os.listdir(sppath):
+    if id in vmids:continue
+    #f=open("%s/%s/%s.ovf" % (sppath,id,id))
+    #regname=re.compile(".*<Name>(.*)</Name>.*")
+    #for line in f.readlines():
+     #m=regname.match(line)
+     #if m:print m.group(1)
+    #f.close()
+    tree = ET.parse("%s/%s/%s.ovf" % (sppath,id,id))
+    root = tree.getroot()
+    for content in root.findall('Content'):
+     name=content.findall("Name")[0].text
+     print "%s" % name   
+  else:
+   print "SSH should be used here..."
  sys.exit(0)
 
 #once here, a vm is expected
