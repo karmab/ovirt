@@ -33,14 +33,14 @@ truststore = None
 s=vdscli.connect("%s:%s" % (host,port),useSSL, truststore)
 
 #check if i am spm
-#try:
-spuid=s.getConnectedStoragePoolsList()["poollist"][0]
-if s.getSpmStatus(spuid)['spm_st']['spmStatus']:
- spm=True
-else:
+try:
+ spuid=s.getConnectedStoragePoolsList()["poollist"][0]
+ if s.getSpmStatus(spuid)['spm_st']['spmStatus']=="SPM":
+  spm=True
+ else:
+  spm=False
+except:
  spm=False
-#except:
-# spm=False
 
 if listing:
  vms={}
