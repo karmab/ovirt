@@ -1,5 +1,6 @@
 #!/usr/bin/python 
 
+import getpass
 import xml.etree.ElementTree as ET
 import optparse
 import os
@@ -15,6 +16,7 @@ parser.add_option("-l", "--list", dest="listing", action="store_true", help="Lis
 parser.add_option("-m", "--migrate", dest="migrate", type="string", help="Migrate Vm to specified host")
 parser.add_option("-p", "--port", dest="port", default="54321",type="string", help="Port to connect to.Defaults to localhost")
 parser.add_option("-o", "--console", dest="console", action="store_true", help="Get console")
+parser.add_option("-s", "--start", dest="start", action="store_true", help="start vm")
 parser.add_option("-w", "--stop", dest="stop", action="store_true", help="stop vm")
 parser.add_option("-H", "--host", dest="host", default="127.0.0.1",type="string", help="Server to connect to.Defaults to localhost")
 parser.add_option("-O", "--org", dest="org",type="string", help="Organisation for console mode")
@@ -25,10 +27,37 @@ host=options.host
 listing=options.listing
 migrate=options.migrate
 port=options.port
+start=options.start
 stop=options.stop
 console=options.console
 org=options.org
 truststore=options.truststore
+
+#helper functions for ssh based consults
+def sshconnect(host):
+ username="root"
+ try:
+  import paramiko
+ except ImportError:
+  print "Paramiko s module is required for ssh operations with the SPM"
+  print "Either install it or launch the script locally"
+  os._exit(1)
+ password=getpass.getpass("Enter Root Password for host %s:" % host)
+ ssh = paramiko.SSHClient()
+ ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+ ssh.load_host_keys(os.path.expanduser(os.path.join("~", ".ssh", "known_hosts")))
+ ssh.connect(host, username=username, password=password)
+ #ssh.connect(host, username=username, key_filename=path_to_priv_key_file)
+ return ssh
+
+def sshlist(ssh,directory):
+ ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command("ls %s" % directory)
+ return ssh_stdout.read()
+
+def sshfile(ssh,path):
+ ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command("cat %s" % path)
+ return ssh_stdout.read()
+
 
 useSSL = True
 s=vdscli.connect("%s:%s" % (host,port),useSSL, truststore)
@@ -36,6 +65,7 @@ s=vdscli.connect("%s:%s" % (host,port),useSSL, truststore)
 #check if i am spm
 try:
  spuid=s.getConnectedStoragePoolsList()["poollist"][0]
+ sppath= "/rhev/data-center/%s/mastersd/master/vms" % spuid
  if s.getSpmStatus(spuid)['spm_st']['spmStatus']=="SPM":
   spm=True
  else:
@@ -46,37 +76,39 @@ except:
 if listing:
  vms={}
  vmids=[]
+ print "VMS running on this host:"
  for vm in  s.list(True)["vmList"]:
   vms[vm["vmName"]]="%s on port %s" % (vm["display"],vm["displayPort"])
   vmids.append(vm["vmId"])
  for vm in sorted(vms):
   print "%s using %s" % (vm,vms[vm])
  if spm:
-  print "not running vms:"
-  sppath= "/rhev/data-center/%s/mastersd/master/vms" % spuid
+  print "VMS reported by this host,as SPM:"
   if host=="127.0.0.1":
    for id in os.listdir(sppath):
     if id in vmids:continue
-    #f=open("%s/%s/%s.ovf" % (sppath,id,id))
-    #regname=re.compile(".*<Name>(.*)</Name>.*")
-    #for line in f.readlines():
-     #m=regname.match(line)
-     #if m:print m.group(1)
-    #f.close()
     tree = ET.parse("%s/%s/%s.ovf" % (sppath,id,id))
     root = tree.getroot()
     for content in root.findall('Content'):
      name=content.findall("Name")[0].text
      print "%s" % name   
   else:
-   print "SSH should be used here..."
+   ssh=sshconnect(host)
+   for id in sshlist(ssh,sppath).split("\n"):
+    if id in vmids or id=="":continue
+    tree=sshfile(ssh,"%s/%s/%s.ovf" % (sppath,id,id))
+    root = ET.fromstring(tree)
+    #now we can parse
+    for content in root.findall('Content'):
+     name=content.findall("Name")[0].text
+     print "%s" % name   
  sys.exit(0)
 
 #once here, a vm is expected
 if len(args) !=1:
  print "Usage: %prog [options] vmname"
  sys.exit(0)
-else:
+elif not start:
  vms={}
  name=args[0]
  for vm in  s.list(True)["vmList"]:vms[vm["vmName"]]={"vmid":vm["vmId"],"vmdisplay":vm["display"],"vmport":vm["displayPort"]}
@@ -115,6 +147,74 @@ if stop:
   print "vm %s stopped" % name
   sys.exit(0)
 
+if start:
+ vmfound=False
+ name=args[0]
+ for vm in  s.list(True)["vmList"]:
+  if name==vm["vmName"]:
+   print "VM %s allready running on this host" % name
+   sys.exit(1)
+ if not spm:
+  print "vm cant only be launched on SPM"
+  sys.exit(0)
+ name=args[0]
+ print "will launch vm %s.Please check it s not running on another hypervisor!!!" % name
+ if host=="127.0.0.1":
+  for id in os.listdir(sppath):
+   if vmfound:break
+   tree = ET.parse("%s/%s/%s.ovf" % (sppath,id,id))
+   root = tree.getroot()
+   for content in root.findall('Content'):
+    vmname=content.findall("Name")[0].text
+    if vmname==name:
+     vmfound=True 
+     vminfo=root 
+     vmid=id
+     break
+ else:
+  ssh=sshconnect(host)
+  for id in sshlist(ssh,sppath).split("\n"):
+   if vmfound:break
+   if id=="":continue
+   tree=sshfile(ssh,"%s/%s/%s.ovf" % (sppath,id,id))
+   root = ET.fromstring(tree)
+   #now we can parse
+   for content in root.findall('Content'):
+    vmname=content.findall("Name")[0].text
+    if vmname==name:
+     vmfound=True
+     vminfo=root
+     vmid=id
+     break 
+ if not vmfound:
+  print "vm not found"
+  sys.exit(1)
+ else:
+  print "Ready for fun with %s" % vmid
+  cmd={}
+  #now we need to
+  cmd['display']="qxl"
+  cmd['kvmEnable']="True"
+  cmd['vmType']="kvm"
+  cmd['tabletEnable']="True"
+  cmd['vmEnable']="True"
+  cmd['irqChip']="True"
+  cmd['nice']=0
+  cmd['keyboardLayout']="en-us"
+  cmd['acpiEnable']="True"
+  cmd['tdf']="True"
+  cmd['vmName']=vmname
+  #cmd['drives'] = drives
+  #cmd['nicModel'] = nicMod
+  #cmd['bridge'] = node.childNodes[4].firstChild.nodeValue
+  #cmd['memSize'] = node.childNodes[5].firstChild.nodeValue
+  #cmd["smp"] = node.childNodes[4].firstChild.nodeValue
+  #cmd["smpCoresPerSocket"] = node.childNodes[5].firstChild.nodeValue
+  #cmd['macAddr'] = node.childNodes[6].firstChild.nodeValue
+  #cmd["displayIp"] = "172.21.229.155"
+  #cmd["spiceMonitors"] = "1"
+  #cmd["displayNetwork"] = "des"
+
 #to implement:
 #-launch vm
 #migrate vm and get stats about migration
@@ -123,5 +223,4 @@ if stop:
 #stop spm status
 #start spm status 
 #inform about where to find needed certs
-
 sys.exit(0)
