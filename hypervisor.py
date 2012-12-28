@@ -20,7 +20,10 @@ parser.add_option("-s", "--start", dest="start", action="store_true", help="star
 parser.add_option("-w", "--stop", dest="stop", action="store_true", help="stop vm")
 parser.add_option("-H", "--host", dest="host", default="127.0.0.1",type="string", help="Server to connect to.Defaults to localhost")
 parser.add_option("-O", "--org", dest="org",type="string", help="Organisation for console mode")
+parser.add_option("-S", "--startspm", dest="startspm", action="store_true", help="start SPM role")
 parser.add_option("-T", "--truststore", dest="truststore", default="/etc/pki/vdsm",type="string", help="Path containing cert files.Defaults to /etc/pki/vdsm")
+parser.add_option("-W", "--stopspm", dest="stopspm", action="store_true", help="stop SPM role")
+
 (options, args) = parser.parse_args()
 cert=options.cert
 host=options.host
@@ -29,6 +32,8 @@ migrate=options.migrate
 port=options.port
 start=options.start
 stop=options.stop
+stopspm=options.stopspm
+startspm=options.startspm
 console=options.console
 org=options.org
 truststore=options.truststore
@@ -102,6 +107,22 @@ if listing:
     for content in root.findall('Content'):
      name=content.findall("Name")[0].text
      print "%s" % name   
+ sys.exit(0)
+
+if stopspm:
+ if not spm:
+  print "I m not spm anyway"
+  sys.exit(0)
+ s.spmStop(spuid)
+ print "spm role stopped"
+ sys.exit(0)
+
+if startspm:
+ if spm:
+  print "I m allready spm"
+  sys.exit(0)
+ s.spmStart(spuid)
+ print "spm role started"
  sys.exit(0)
 
 #once here, a vm is expected
