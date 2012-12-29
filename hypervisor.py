@@ -63,6 +63,83 @@ def sshfile(ssh,path):
  ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command("cat %s" % path)
  return ssh_stdout.read()
 
+def getvminfo(host,vmid,root):
+ displaynetwork="ovirtmgmt"
+ cmd={}
+ cmd["vmId"]=vmid
+ cmd['display']="qxl"
+ cmd['kvmEnable']="True"
+ cmd['vmType']="kvm"
+ cmd['tabletEnable']="True"
+ cmd['vmEnable']="True"
+ cmd['irqChip']="True"
+ cmd['nice']=0
+ cmd['keyboardLayout']="en-us"
+ cmd['acpiEnable']="True"
+ cmd["displayIp"] = host
+ cmd["spiceMonitors"] = "1"
+ cmd["displayNetwork"] = displaynetwork
+ #tree = ET.parse(path)
+ #root = tree.getroot()
+ disks=[]
+ for child in root:
+  if child.tag =="Section" and "ovf:DiskSection_Type" in child.attrib.values():
+   for disk in child.findall("Disk"):
+    for info in disk.attrib:
+     #print info,disk.attrib[info]
+     if "boot" in info:diskboot=disk.attrib[info]
+     if "fileRef" in info:diskimageid,diskvolid=disk.attrib[info].split("/")
+     #if "}size" in info:disksize=disk.attrib[info]
+     #if "disk-interface" in info:diskinterface=disk.attrib[info]
+     if "volume-format" in info:diskformat=disk.attrib[info].lower()
+    disks.append({"boot":diskboot,"volumeID":diskvolid, "imageID":diskimageid, "format":diskformat})
+
+ for content in root.findall("Content"):
+  name=content.findall("Name")[0].text
+  display=content.findall("DefaultDisplayType")[0].text
+  sections=content.findall("Section")
+  for hardware in sections:
+   if "ovf:VirtualHardwareSection_Type" in hardware.attrib.values():
+    macs=[]
+    nicnames=[]
+    bridges=[]
+    nicmodels=[]
+    diskdomids=[]
+    diskpoolids=[]
+    for item in hardware.findall("Item"):
+     for element in item:
+      if "num_of_sockets" in element.tag:smp=element.text
+      if "cpu_per_socket" in element.tag:cpuspersocket=element.text
+      if "VirtualQuantity" in element.tag:memory=element.text
+      if "AllocationUnits" in element.tag:memoryunits=element.text
+      if "MACAddress" in element.tag:macs.append(element.text)
+      if "Name" in element.tag:nicnames.append(element.text)
+      if  "Connection" in element.tag:bridges.append(element.text)
+      if  "ResourceSubType" in element.tag:
+        if element.text=="1":nicmodels.append("rtl8139")
+        if element.text=="2":nicmodels.append("e1000")
+        if element.text=="3":nicmodels.append("pv")
+      if  "StorageId" in element.tag:diskdomids.append(element.text)
+      if  "StoragePoolId" in element.tag:diskpoolids.append(element.text)
+
+ counter=0
+ cmd["drives"]=[]
+ for disk in disks:
+  cmd["drives"].append(disk) 
+  cmd["drives"][counter]["domainID"]=diskdomids[counter]
+  cmd["drives"][counter]["poolID"]=diskpoolids[counter]
+  counter=counter+1
+
+ cmd["memSize"]=memory
+ cmd["smpCoresPerSocket"]=cpuspersocket
+ cmd["smp"]=smp
+ cmd["bridge"]=",".join(bridges)
+ cmd["macAddr"]=",".join(macs)
+ cmd["vmName"]=name
+ cmd["nicModel"]=",".join(nicmodels)
+ return cmd
+
+
 
 useSSL = True
 s=vdscli.connect("%s:%s" % (host,port),useSSL, truststore)
@@ -173,7 +250,7 @@ if start:
  name=args[0]
  for vm in  s.list(True)["vmList"]:
   if name==vm["vmName"]:
-   print "VM %s allready running on this host" % name
+   print "vm %s allready running on this host" % name
    sys.exit(1)
  if not spm:
   print "vm cant only be launched on SPM"
@@ -211,37 +288,13 @@ if start:
   print "vm not found"
   sys.exit(1)
  else:
-  print "Ready for fun with %s" % vmid
-  cmd={}
-  #now we need to
-  cmd['display']="qxl"
-  cmd['kvmEnable']="True"
-  cmd['vmType']="kvm"
-  cmd['tabletEnable']="True"
-  cmd['vmEnable']="True"
-  cmd['irqChip']="True"
-  cmd['nice']=0
-  cmd['keyboardLayout']="en-us"
-  cmd['acpiEnable']="True"
-  cmd['tdf']="True"
-  cmd['vmName']=vmname
-  #cmd['drives'] = drives
-  #cmd['nicModel'] = nicMod
-  #cmd['bridge'] = node.childNodes[4].firstChild.nodeValue
-  #cmd['memSize'] = node.childNodes[5].firstChild.nodeValue
-  #cmd["smp"] = node.childNodes[4].firstChild.nodeValue
-  #cmd["smpCoresPerSocket"] = node.childNodes[5].firstChild.nodeValue
-  #cmd['macAddr'] = node.childNodes[6].firstChild.nodeValue
-  #cmd["displayIp"] = "172.21.229.155"
-  #cmd["spiceMonitors"] = "1"
-  #cmd["displayNetwork"] = "des"
+  cmd=getvminfo(host,vmid,root)
+  s.create(cmd)
+  print "vm %s started" % name
 
-#to implement:
+#TODO:
 #-launch vm
 #migrate vm and get stats about migration
 #get a serial console
-#-get spm status
-#stop spm status
-#start spm status 
 #inform about where to find needed certs
 sys.exit(0)
