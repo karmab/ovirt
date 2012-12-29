@@ -12,8 +12,9 @@ from vdsm import vdscli
 version="0.0"
 parser = optparse.OptionParser("Usage: %prog [options] vmname",version=version)
 parser.add_option("-c", "--cert", dest="cert", type="string", help="path to the CA cert file required in order to connect to console.Get it from http://${OVIRT}/ca.crt, keep only the CERTIFICATE part")
+parser.add_option("-d", "--display", dest="display", type="string", default="ovirtmgmt",help="Display network when launching VM.Defaults to ovirtmgmt")
 parser.add_option("-l", "--list", dest="listing", action="store_true", help="List vms")
-parser.add_option("-m", "--migrate", dest="migrate", type="string", help="Migrate Vm to specified host")
+#parser.add_option("-m", "--migrate", dest="migrate", type="string", help="Migrate Vm to specified host")
 parser.add_option("-p", "--port", dest="port", default="54321",type="string", help="Port to connect to.Defaults to localhost")
 parser.add_option("-o", "--console", dest="console", action="store_true", help="Get console")
 parser.add_option("-s", "--start", dest="start", action="store_true", help="start vm")
@@ -28,7 +29,8 @@ parser.add_option("-W", "--stopspm", dest="stopspm", action="store_true", help="
 cert=options.cert
 host=options.host
 listing=options.listing
-migrate=options.migrate
+display=options.display
+#migrate=options.migrate
 port=options.port
 start=options.start
 stop=options.stop
@@ -63,8 +65,7 @@ def sshfile(ssh,path):
  ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command("cat %s" % path)
  return ssh_stdout.read()
 
-def getvminfo(host,vmid,root):
- displaynetwork="ovirtmgmt"
+def getvminfo(host,vmid,display,root):
  cmd={}
  cmd["vmId"]=vmid
  cmd['display']="qxl"
@@ -78,7 +79,7 @@ def getvminfo(host,vmid,root):
  cmd['acpiEnable']="True"
  cmd["displayIp"] = host
  cmd["spiceMonitors"] = "1"
- cmd["displayNetwork"] = displaynetwork
+ cmd["displayNetwork"] = display
  #tree = ET.parse(path)
  #root = tree.getroot()
  disks=[]
@@ -138,8 +139,6 @@ def getvminfo(host,vmid,root):
  cmd["vmName"]=name
  cmd["nicModel"]=",".join(nicmodels)
  return cmd
-
-
 
 useSSL = True
 s=vdscli.connect("%s:%s" % (host,port),useSSL, truststore)
@@ -288,7 +287,7 @@ if start:
   print "vm not found"
   sys.exit(1)
  else:
-  cmd=getvminfo(host,vmid,root)
+  cmd=getvminfo(host,vmid,display,root)
   s.create(cmd)
   print "vm %s started" % name
 
