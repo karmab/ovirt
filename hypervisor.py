@@ -263,6 +263,8 @@ if start:
    root = tree.getroot()
    for content in root.findall('Content'):
     vmname=content.findall("Name")[0].text
+    template=content.findall("TemplateId")[0].text
+    if template !="00000000-0000-0000-0000-000000000000":continue
     if vmname==name:
      vmfound=True 
      vminfo=root 
