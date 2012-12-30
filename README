@@ -17,25 +17,32 @@ Contents
 --------
 
     README.txt          		this file
-    ovirt.py				creates ( and deletes ) virtual machines in ovirt/rhev-m of several clients
+    ovirt.py				start/stop/migrate/creates/deletes virtual machines in ovirt/rhev-m of several clients
+    hypervisor.py			start/stop/get console of virtual machines connecting directly to the hypervisor (usefull when manager is down) 
                                                             
 
 Typical uses
 ---------
      
-    CREATE VIRTUAL MACHINE V0100 BASED ON PROFILE BE64 FOR CLIENT BIGCOMPANY, PROVIDING IP FOR COBBLER
-    ovirt.py -ZC BIGCOMPANY -n V0100 -p BE6 -1 192.168.1.100 -2 192.168.10.100
+    CREATE VIRTUAL MACHINE V0100 BASED ON PROFILE BE6 FOR CLIENT BIGCOMPANY, PROVIDING IPS FOR COBBLER TOO
+    ovirt.py -ZC bigcompany -n v0100 -p be6 -1 192.168.1.100 -2 192.168.10.100
     
     DELETE VIRTUAL MACHINE V0100 FROM CLIENT NYSE
-    ovirt.py -C NYSE -K V0100
+    ovirt.py -C nyse -K v0100
+
+    GET A CONSOLE FOR VIRTUAL MACHINE HENDRIX ( IN DEFAULT CLIENT)
+    ovirt.py -o hendrix
+
+    START A VM KIPA02 DIRECTLY THROUGH THE HYPERVISOR WITH 
+    hypervisor.py -T ~/vdsm_certs -H 192.168.6.1 -s kipa02
 
 
 Problems?
 ---------
 
-Send a mail to karimboumedhel@gmail.com or find it yourself !
+Send me a mail at karimboumedhel@gmail.com !
 
-Ai seu te pego!
+Mac Fly!!!
 
 karmab
 
