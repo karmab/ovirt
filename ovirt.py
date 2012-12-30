@@ -780,6 +780,8 @@ if len(args) == 1 and not new:
    print "Define your org in ovirt.ini"
    sys.exit(1)
   vm=api.vms.get(name=name)
+  print dir(vm.get_display())
+  sys.exit(0)
   vm.ticket().set_ticket("")
   ticket=vm.ticket().get_ticket().get_value()
   address,port,sport=vm.get_display().get_address(),vm.get_display().get_port(),vm.get_display().get_secure_port()

@@ -23,6 +23,8 @@ parser.add_option("-H", "--host", dest="host", default="127.0.0.1",type="string"
 parser.add_option("-O", "--org", dest="org",type="string", help="Organisation for console mode")
 parser.add_option("-S", "--startspm", dest="startspm", action="store_true", help="start SPM role")
 parser.add_option("-T", "--truststore", dest="truststore", default="/etc/pki/vdsm",type="string", help="Path containing cert files.Defaults to /etc/pki/vdsm")
+parser.add_option("-V", "--vnc", dest="vnc", action="store_true", help="Force VNC protocol when launching a VM")
+parser.add_option("-X", "--spice", dest="spice", action="store_true", help="Force SPICE protocol when launching a VM")
 parser.add_option("-W", "--stopspm", dest="stopspm", action="store_true", help="stop SPM role")
 
 (options, args) = parser.parse_args()
@@ -39,6 +41,8 @@ startspm=options.startspm
 console=options.console
 org=options.org
 truststore=options.truststore
+spice=options.spice
+vnc=options.vnc
 
 #helper functions for ssh based consults
 def sshconnect(host):
@@ -68,20 +72,19 @@ def sshfile(ssh,path):
 def getvminfo(host,vmid,display,root):
  cmd={}
  cmd["vmId"]=vmid
- cmd['display']="qxl"
- cmd['kvmEnable']="True"
- cmd['vmType']="kvm"
- cmd['tabletEnable']="True"
- cmd['vmEnable']="True"
- cmd['irqChip']="True"
- cmd['nice']=0
- cmd['keyboardLayout']="en-us"
- cmd['acpiEnable']="True"
+ #cmd["display"]="qxl"
+ cmd["kvmEnable"]="True"
+ cmd["vmType"]="kvm"
+ cmd["tabletEnable"]="True"
+ cmd["vmEnable"]="True"
+ cmd["irqChip"]="True"
+ cmd["nice"]=0
+ cmd["keyboardLayout"]="en-us"
+ cmd["acpiEnable"]="True"
+ cmd["display"]="qxl"
  cmd["displayIp"] = host
  cmd["spiceMonitors"] = "1"
  cmd["displayNetwork"] = display
- #tree = ET.parse(path)
- #root = tree.getroot()
  disks=[]
  for child in root:
   if child.tag =="Section" and "ovf:DiskSection_Type" in child.attrib.values():
@@ -98,6 +101,8 @@ def getvminfo(host,vmid,display,root):
  for content in root.findall("Content"):
   name=content.findall("Name")[0].text
   display=content.findall("DefaultDisplayType")[0].text
+  if display!="1"or vnc:cmd["display"]="vnc"
+  if spice:cmd["display"]="qxl"
   sections=content.findall("Section")
   for hardware in sections:
    if "ovf:VirtualHardwareSection_Type" in hardware.attrib.values():
