@@ -55,6 +55,7 @@ actiongroup.add_option("-i", "--iso", dest="iso", type="string", help="Specify i
 actiongroup.add_option("-j", "--migrate", dest="migrate", action="store_true", help="Migrate VM")
 actiongroup.add_option("-k", "--host", dest="host", type="string", help="Host to use when migrating a VM")
 actiongroup.add_option("-o", "--console", dest="console", action="store_true", help="Get a console")
+actiongroup.add_option("-P", "--preferred", dest="preferred", type="string", help="Set preferred host")
 actiongroup.add_option("-q", "--quit", dest="isoquit", action="store_true", help="Remove iso from VM")
 actiongroup.add_option("-r", "--restart", dest="restart", action="store_true", help="Restart vm")
 actiongroup.add_option("-s", "--start", dest="start", action="store_true", help="Start VM")
@@ -126,6 +127,7 @@ ip2=options.ip2
 ip3=options.ip3
 activate=options.activate
 maintenance=options.maintenance
+preferred=options.preferred
 kernel=options.kernel
 initrd=options.initrd
 cmdline=options.cmdline
@@ -594,6 +596,8 @@ if len(args) == 1 and not new:
     action=params.Action()
     action.host=host
     vm.migrate(action=action)
+   else:
+    print "Specified host doesnt exist.Not doing anything...."
   else:
    vm.migrate()
   print "VM s migration launched"
@@ -692,6 +696,14 @@ if len(args) == 1 and not new:
   vm.update()
   print "Guestid set to %s for %s" % (guestid,name)
   sys.exit(0)
+ if preferred:
+  host=api.hosts.get(name=preferred)
+  if not host:
+   print "Host %s not found.Not doing anything...." % preferred
+   sys.exit(0)
+  placement_policy=params.VmPlacementPolicy(host=host)
+  vm.placement_policy=placement_policy
+  vm.update()
  if adddisk:
   #clu=api.clusters.get(name=clu)
   if not storagedomain:
@@ -730,10 +742,6 @@ if len(args) == 1 and not new:
   sys.exit(1)
  print "Name: %s" % vm.name
  print "Uid: %s" % vm.get_id()
- host=vm.get_host()
- if host:
-  hostid=host.get_id()
-  print "Host: %s" % api.hosts.get(id=hostid).get_name()
  print "Boot1: %s" % (vm.os.boot[0].get_dev())
  if len(vm.os.boot)==2:
   print "Boot2: %s" % (vm.os.boot[1].get_dev())
@@ -746,6 +754,10 @@ if len(args) == 1 and not new:
  if vm.status.state=="up":
   host=findhostbyid(api,vm.get_host().get_id())
   print "Host: %s" % host
+ preferredhost=vm.get_placement_policy().get_host()
+ if preferredhost:
+  hostid=preferredhost.get_id()
+  print "Preferred Host: %s" % api.hosts.get(id=hostid).get_name()
  print "Cpu: %s sockets:%s" % (vm.cpu.topology.cores,vm.cpu.topology.sockets)
  if vm.status.state=="up":
   for info in vm.get_statistics().list(): 
