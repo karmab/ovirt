@@ -41,7 +41,7 @@ creationgroup.add_option("-m", "--memory", dest="memory2", metavar="MEMORY",type
 creationgroup.add_option("-n", "--new", dest="new",action="store_true", help="Create new VM")
 creationgroup.add_option("-p", "--profile", dest="profile",type="string", help="specify Profile")
 creationgroup.add_option("-D", "--storagedomain" , dest="storagedomain", type="string", help="Specify Storage Domain")
-creationgroup.add_option("-E", "--cluster", dest="clu", metavar="CLUSTER",type="string", help="Specify Cluster")
+creationgroup.add_option("-G", "--cluster", dest="clu", metavar="CLUSTER",type="string", help="Specify Cluster")
 creationgroup.add_option("-N", "--numinterfaces", dest="numinterfaces", type="int", help="Specify number of net interfaces")
 creationgroup.add_option("-T", "--thin", dest="thin", action="store_true", help="Use thin provisioning for disk")
 creationgroup.add_option("-Y", "--nolaunch", dest="nolaunch", action="store_true", help="Dont Launch VM,just create it")
@@ -72,10 +72,12 @@ actiongroup.add_option("-K", "--kill", dest="kill", action="store_true" , help="
 actiongroup.add_option("-F", "--forcekill", dest="forcekill", action="store_true", help="Dont ask confirmation when killing a VM")
 actiongroup.add_option("-4", "--runonce", dest="runonce", action="store_true", help="Runonce VM.you will need to pass kernel,initrd and cmdline")
 actiongroup.add_option("-5", "--template", dest="template", type="string", help="Deploy VM from template")
+actiongroup.add_option("-6", "--import", dest="importvm", type="string", help="Import VM.you will need to pass kernel,initrd and cmdline")
 parser.add_option_group(actiongroup)
 
 listinggroup = optparse.OptionGroup(parser, "Listing options")
 listinggroup.add_option("-l", "--listprofiles", dest="listprofiles", action="store_true", help="list available profiles")
+listinggroup.add_option("-E", "--listexports", dest="listexports", action="store_true", help="List machines in export domain")
 listinggroup.add_option("-H", "--listhosts", dest="listhosts", action="store_true", help="List hosts")
 listinggroup.add_option("-I", "--listisos", dest="listisos", action="store_true", help="List isos")
 listinggroup.add_option("-L", "--listclients", dest="listclients", action="store_true", help="list available clients")
@@ -113,6 +115,7 @@ listclients = options.listclients
 switchclient = options.switchclient
 listisos = options.listisos
 host = options.host
+listexports = options.listexports
 listhosts = options.listhosts
 listvms = options.listvms
 listprofiles = options.listprofiles
@@ -136,6 +139,7 @@ if memory2:memory2=memory2*MB
 restart=options.restart
 start=options.start
 runonce=options.runonce
+importvm=options.importvm
 stop=options.stop
 summary=options.summary
 numcpu = options.numcpu
@@ -428,6 +432,16 @@ if listhosts:
   print ""
  sys.exit(0)
 
+if listexports:
+ for sd in api.storagedomains.list():
+  if sd.get_type()=="export":
+   exportdomain=sd.get_name()
+   print "Export domain:%s" % (exportdomain)
+   for vm in api.storagedomains.get(name=exportdomain).vms.list():print vm.name
+ sys.exit(0)
+
+
+
 #SEARCH VMS
 if search:
  vms=api.vms.list()
@@ -488,6 +502,24 @@ if summary:
     if cluh == clu.name:print "Host: %s Cpu: %s" % (h.name,h.cpu.name)
  sys.exit(0)
 
+if importvm:
+ vmfound=False
+ for sd in api.storagedomains.list():
+  if vmfound==True:break
+  if sd.get_type()=="export":
+   exportdomain=sd.get_name()
+   for vm in api.storagedomains.get(name=exportdomain).vms.list():
+    if vm.name==importvm:
+     exportdomainname=exportdomain
+     exportdomain=sd
+     vmfound=True
+     break
+ if not vmfound:
+  print "No matching vm found.Leaving..."
+  sys.exit(1)
+ print "vm %s imported from storagedomain %s to cluster %s and storagedomain %s" % (importvm,exportdomainname,clu,storagedomain)
+ exportdomain.vms.get(importvm).import_vm(params.Action(storage_domain=api.storagedomains.get(storagedomain), cluster=api.clusters.get(name=clu)))
+ sys.exit(0)
 
 if template:
  if len(args) != 1:
