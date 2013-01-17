@@ -72,7 +72,7 @@ actiongroup.add_option("-K", "--kill", dest="kill", action="store_true" , help="
 actiongroup.add_option("-F", "--forcekill", dest="forcekill", action="store_true", help="Dont ask confirmation when killing a VM")
 actiongroup.add_option("-4", "--runonce", dest="runonce", action="store_true", help="Runonce VM.you will need to pass kernel,initrd and cmdline")
 actiongroup.add_option("-5", "--template", dest="template", type="string", help="Deploy VM from template")
-actiongroup.add_option("-6", "--import", dest="importvm", type="string", help="Import VM.you will need to pass kernel,initrd and cmdline")
+actiongroup.add_option("-6", "--import", dest="importvm", type="string", help="Import specified VM")
 parser.add_option_group(actiongroup)
 
 listinggroup = optparse.OptionGroup(parser, "Listing options")
