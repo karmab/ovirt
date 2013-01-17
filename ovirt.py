@@ -1070,9 +1070,16 @@ if not nolaunch:
   print "Waiting For image to be unlocked..."
   time.sleep(5) 
  for disk in api.vms.get(name).disks.list():
-  while disk.get_status().get_state()=="Locked" or disk.get_status().get_state()=="locked":
-   print "disk still in %s state" % disk.get_status().get_state()
-   time.sleep(5) 
+  diskok=False
+  diskid=disk.get_id()
+  while not diskok:
+   diskstate=api.vms.get(name).disks.get(id=diskid).get_status().get_state()
+   if diskstate=="Locked" or diskstate=="locked":
+    print "waiting for one of the disks to get unlocked"
+    time.sleep(5)
+   else:
+    diskok=True
+
  #at this point,VM is ready to be started
  if runonce:
   action=params.Action()
