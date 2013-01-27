@@ -437,7 +437,8 @@ if listexports:
   if sd.get_type()=="export":
    exportdomain=sd.get_name()
    print "Export domain:%s" % (exportdomain)
-   for vm in api.storagedomains.get(name=exportdomain).vms.list():print vm.name
+   for vm in api.storagedomains.get(name=exportdomain).vms.list():print "vm:%s" % vm.name
+   for template in api.storagedomains.get(name=exportdomain).templates.list():print "template:%s" % template.name
  sys.exit(0)
 
 
@@ -504,6 +505,7 @@ if summary:
 
 if importvm:
  vmfound=False
+ templatefound=False
  for sd in api.storagedomains.list():
   if vmfound==True:break
   if sd.get_type()=="export":
@@ -514,11 +516,21 @@ if importvm:
      exportdomain=sd
      vmfound=True
      break
- if not vmfound:
+   for vm in api.storagedomains.get(name=exportdomain).templates.list():
+    if vm.name==importvm:
+     exportdomainname=exportdomain
+     exportdomain=sd
+     templatefound=True
+     break
+ if not vmfound and not templatefound:
   print "No matching vm found.Leaving..."
   sys.exit(1)
  print "vm %s imported from storagedomain %s to cluster %s and storagedomain %s" % (importvm,exportdomainname,clu,storagedomain)
- exportdomain.vms.get(importvm).import_vm(params.Action(storage_domain=api.storagedomains.get(storagedomain), cluster=api.clusters.get(name=clu)))
+ if vmfound:
+  exportdomain.vms.get(importvm).import_vm(params.Action(storage_domain=api.storagedomains.get(storagedomain), cluster=api.clusters.get(name=clu)))
+ if templatefound:
+  exportdomain.templates.get(importvm).import_template(params.Action(storage_domain=api.storagedomains.get(storagedomain), cluster=api.clusters.get(name=clu)))
+  #print dir(exportdomain.templates.get(importvm))
  sys.exit(0)
 
 if template:
