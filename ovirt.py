@@ -661,11 +661,11 @@ if len(args) == 1 and not new:
    for f in sd.files.list():
     if f.get_id()==iso: 
      isofound=True
-     cdrom=params.CdRom(vm=vm,file=f)
+     #cdrom=params.CdRom(vm=vm,file=f)
+     cdrom=params.CdRom(file=f)
      if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
-      #for cd in vm.cdroms.list():cd.set_file(f)
-      print "TODO CODE"
-      #vm.update()
+      vm.cdroms.add(cdrom)
+      cdrom.update(current=True)
      else:
       vm.cdroms.add(cdrom)
       vm.update()
@@ -1014,6 +1014,7 @@ except:
 #grab ips and extra routes for cobbler
 
 if cobbler:
+ gwstatic,gwbackup,staticroutes,backuproutes=None,None,None,None
  if profiles[profile].has_key("nextserver"):nextserver=profiles[profile]['nextserver']
  if profiles[profile].has_key("gwbackup"):gwbackup=profiles[profile]['gwbackup']
  if profiles[profile].has_key("gwstatic"):gwstatic=profiles[profile]['gwstatic']
