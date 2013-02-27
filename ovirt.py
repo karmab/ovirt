@@ -565,6 +565,17 @@ if template:
 if len(args) == 1 and not new:
  name=args[0]
  vm=api.vms.get(name=name)
+ if kill and cobbler and not vm:
+  s = xmlrpclib.Server("http://%s/cobbler_api" % cobblerhost)
+  token = s.login(cobbleruser,cobblerpassword)
+  system=s.find_system({"name":name})
+  if system==[]:
+   print "Nothing to do"
+  else:
+   s.remove_system(name,token)
+   s.sync(token)
+   print "%s sucessfully killed in %s" % (name,cobblerhost)
+  sys.exit(0)
  if not vm:
   print "VM %s not found.Leaving..." % name
   sys.exit(1)
@@ -1087,24 +1098,30 @@ if not nolaunch:
  while api.vms.get(name).status.state =="image_locked":
   print "Waiting For image to be unlocked..."
   time.sleep(5) 
- for disk in api.vms.get(name).disks.list():
-  diskok=False
-  diskid=disk.get_id()
-  while not diskok:
-   diskstate=api.vms.get(name).disks.get(id=diskid).get_status().get_state()
-   if diskstate=="Locked" or diskstate=="locked":
-    print "waiting for one of the disks to get unlocked"
-    time.sleep(5)
-   else:
-    diskok=True
 
  #at this point,VM is ready to be started
  if runonce:
   action=params.Action()
   action.vm=params.VM(os=params.OperatingSystem(kernel=kernel2,initrd=initrd2,cmdline=cmdline2))
-  api.vms.get(name).start(action=action)
+  launched=False
+  while not launched:
+   try: 
+    api.vms.get(name).start(action=action)
+    launched=True
+   except:
+    print "waiting to launch vm..."
+    time.sleep(5)
+    continue
  else:
-  api.vms.get(name).start()
+  launched=False
+  while not launched:
+   try:
+    api.vms.get(name).start()
+    launched=True
+   except:
+    print "waiting to launch vm..."
+    time.sleep(5)
+    continue
  print "VM %s started" % name
 
 sys.exit(0)
