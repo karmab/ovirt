@@ -82,7 +82,7 @@ listinggroup.add_option("-H", "--listhosts", dest="listhosts", action="store_tru
 listinggroup.add_option("-I", "--listisos", dest="listisos", action="store_true", help="List isos")
 listinggroup.add_option("-L", "--listclients", dest="listclients", action="store_true", help="list available clients")
 listinggroup.add_option("-O", "--listtags", dest="listtags", action="store_true", help="List available tags")
-listinggroup.add_option("-V", "--listvms", dest="listvms", action="store_true", help="list all vms")
+listinggroup.add_option("-V", "--listvms", dest="listvms", action="store_true", help="list all vms,along with theit status")
 parser.add_option_group(listinggroup)
 
 cobblergroup = optparse.OptionGroup(parser, "Cobbler options")
@@ -389,7 +389,8 @@ api = API(url=url, username=ouser, password=opassword, insecure=True)
 
 #LIST VMS
 if listvms:
- for vm in api.vms.list():print vm.get_name()
+ for vm in api.vms.list():
+  print "%s %s" % (vm.get_name(),vm.status.state)
  sys.exit(0)
 
 if listisos:
