@@ -70,9 +70,9 @@ actiongroup.add_option("-B", "--boot", dest="boot", type="string", help="Specify
 #actiongroup.add_option("-Q", "--hanging", dest="hanging", action="store_true", help="Check hanging tasks")
 actiongroup.add_option("-K", "--kill", dest="kill", action="store_true" , help="specify VM to kill in virtual center.Confirmation will be asked unless -F/--forcekill flag is set.VM will also be killed in cobbler server if -Z/-cobbler flag set")
 actiongroup.add_option("-F", "--forcekill", dest="forcekill", action="store_true", help="Dont ask confirmation when killing a VM")
-actiongroup.add_option("-4", "--runonce", dest="runonce", action="store_true", help="Runonce VM.you will need to pass kernel,initrd and cmdline")
 actiongroup.add_option("-5", "--template", dest="template", type="string", help="Deploy VM from template")
 actiongroup.add_option("-6", "--import", dest="importvm", type="string", help="Import specified VM")
+actiongroup.add_option("-7", "--runonce", dest="runonce", action="store_true", help="Runonce VM.you will need to pass kernel,initrd and cmdline")
 parser.add_option_group(actiongroup)
 
 listinggroup = optparse.OptionGroup(parser, "Listing options")
@@ -90,6 +90,7 @@ cobblergroup.add_option("-Z", "--cobbler", dest="cobbler", action="store_true", 
 cobblergroup.add_option("-1", "--ip1", dest="ip1", type="string", help="Specify First IP")
 cobblergroup.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
 cobblergroup.add_option("-3", "--ip3", dest="ip3", type="string", help="Specify Third IP")
+cobblergroup.add_option("-4", "--ip4", dest="ip4", type="string", help="Specify Fourth IP")
 parser.add_option_group(cobblergroup)
 
 parser.add_option("-A", "--activate", dest="activate", type="string", help="Activate specified storageDomain")
@@ -960,6 +961,16 @@ elif numinterfaces == 3:
   nets=[net1,installnet,net3]
  else:
   nets=[net1,net2,net3]
+#cluster machines
+elif numinterfaces == 4:
+ net1=profiles[profile]['net1']
+ net2=profiles[profile]['net2']
+ net3=profiles[profile]['net3']
+ net4=profiles[profile]['net4']
+ if installnet:
+  nets=[net1,installnet,net3,net4]
+ else:
+  nets=[net1,net2,net3,net4]
 
 
 #VM CREATION IN OVIRT
@@ -996,6 +1007,7 @@ try:
    break
  if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='eth1', network=params.Network(name=net2), interface=netinterface))
  if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='eth2', network=params.Network(name=net3), interface=netinterface))
+ if numinterfaces>=4:api.vms.get(name).nics.add(params.NIC(name='eth3', network=params.Network(name=net4), interface=netinterface))
  if iso:
   iso=checkiso(api,iso)
   cdrom=params.CdRom(file=iso)
@@ -1033,6 +1045,7 @@ if cobbler:
  if profiles[profile].has_key("subnet1"):subnet1=profiles[profile]['subnet1']
  if profiles[profile].has_key("subnet2"):subnet2=profiles[profile]['subnet2']
  if profiles[profile].has_key("subnet3"):subnet3=profiles[profile]['subnet3']
+ if profiles[profile].has_key("subnet4"):subnet4=profiles[profile]['subnet4']
  if numinterfaces == 1:
   if not subnet1:
    print "Missing subnet in client ini file.Check documentation"
@@ -1052,6 +1065,15 @@ if cobbler:
   if not ip1:ip1=raw_input("Enter first service ip:\n")
   if not ip2:ip2=raw_input("Enter second ip:\n")
   if not ip3:ip3=raw_input("Enter third ip:\n")
+ #cluster machines
+ elif numinterfaces == 4:
+  if not subnet1 or not subnet2 or not subnet3 or not subnet4:
+   print "Missing subnet in client ini file.Check documentation"
+   sys.exit(1)
+  if not ip1:ip1=raw_input("Enter first service ip:\n")
+  if not ip2:ip2=raw_input("Enter second ip:\n")
+  if not ip3:ip3=raw_input("Enter third ip:\n")
+  if not ip4:ip4=raw_input("Enter fourth ip:\n")
  if gwstatic and staticroutes:staticroutes=staticroutes.replace(",",":%s " % gwstatic)+":"+gwstatic
  if gwbackup and backuproutes:
   backuproutes=backuproutes.replace(",",":%s " % gwbackup)+":"+gwbackup
@@ -1087,6 +1109,18 @@ if cobbler:
   s.modify_system(system,'modify_interface',eth0,token)
   s.modify_system(system,'modify_interface',eth1,token)
   s.modify_system(system,'modify_interface',eth2,token)
+ elif numinterfaces==4:
+  eth0={"macaddress-eth0":macaddr[0],"static-eth0":1,"ipaddress-eth0":ip1,"subnet-eth0":subnet1}
+  if staticroutes:
+   eth1={"macaddress-eth1":macaddr[1],"static-eth1":1,"ipaddress-eth1":ip2,"subnet-eth1":subnet2,"staticroutes-eth1":staticroutes}
+  else:
+   eth1={"macaddress-eth1":macaddr[1],"static-eth1":1,"ipaddress-eth1":ip2,"subnet-eth1":subnet2}
+  eth2={"macaddress-eth2":macaddr[2],"static-eth2":1,"ipaddress-eth2":ip3,"subnet-eth2":subnet3}
+  eth3={"macaddress-eth3":macaddr[3],"static-eth3":1,"ipaddress-eth3":ip4,"subnet-eth3":subnet4}
+  s.modify_system(system,'modify_interface',eth0,token)
+  s.modify_system(system,'modify_interface',eth1,token)
+  s.modify_system(system,'modify_interface',eth2,token)
+  s.modify_system(system,'modify_interface',eth4,token)
  s.save_system(system,token)
  s.sync(token)
  print "VM %s created in cobbler" % name
