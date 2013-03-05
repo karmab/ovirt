@@ -129,6 +129,7 @@ if disksize2:disksize2=disksize2*GB
 ip1=options.ip1
 ip2=options.ip2
 ip3=options.ip3
+ip4=options.ip4
 activate=options.activate
 maintenance=options.maintenance
 preferred=options.preferred
@@ -1120,7 +1121,7 @@ if cobbler:
   s.modify_system(system,'modify_interface',eth0,token)
   s.modify_system(system,'modify_interface',eth1,token)
   s.modify_system(system,'modify_interface',eth2,token)
-  s.modify_system(system,'modify_interface',eth4,token)
+  s.modify_system(system,'modify_interface',eth3,token)
  s.save_system(system,token)
  s.sync(token)
  print "VM %s created in cobbler" % name
