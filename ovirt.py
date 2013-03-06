@@ -675,13 +675,14 @@ if len(args) == 1 and not new:
    for f in sd.files.list():
     if f.get_id()==iso: 
      isofound=True
-     #cdrom=params.CdRom(vm=vm,file=f)
-     cdrom=params.CdRom(file=f)
+     cdparams=params.CdRom(file=f)
      if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
-      vm.cdroms.add(cdrom)
+      cdrom=vm.cdroms.get(id="00000000-0000-0000-0000-000000000000")
+      #cdrom.set_file(iso)
       cdrom.update(current=True)
+      #vm.update(True)
      else:
-      vm.cdroms.add(cdrom)
+      vm.cdroms.add(cdparams)
       vm.update()
      print "Added iso %s from Isodomain %s" % (iso,sd.get_name())
   if not isofound:
