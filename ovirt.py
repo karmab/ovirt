@@ -678,9 +678,9 @@ if len(args) == 1 and not new:
      cdparams=params.CdRom(file=f)
      if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
       cdrom=vm.cdroms.get(id="00000000-0000-0000-0000-000000000000")
-      #cdrom.set_file(iso)
+      isofile = params.File(id=iso)
+      cdrom.set_file(isofile)
       cdrom.update(current=True)
-      #vm.update(True)
      else:
       vm.cdroms.add(cdparams)
       vm.update()
