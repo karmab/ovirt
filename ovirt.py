@@ -91,6 +91,7 @@ cobblergroup.add_option("-1", "--ip1", dest="ip1", type="string", help="Specify 
 cobblergroup.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
 cobblergroup.add_option("-3", "--ip3", dest="ip3", type="string", help="Specify Third IP")
 cobblergroup.add_option("-4", "--ip4", dest="ip4", type="string", help="Specify Fourth IP")
+cobblergroup.add_option("-5", "--dns", dest="dns", type="string", help="Specify Fourth IP")
 parser.add_option_group(cobblergroup)
 
 parser.add_option("-A", "--activate", dest="activate", type="string", help="Activate specified storageDomain")
@@ -130,6 +131,7 @@ ip1=options.ip1
 ip2=options.ip2
 ip3=options.ip3
 ip4=options.ip4
+dns=options.dns
 activate=options.activate
 maintenance=options.maintenance
 preferred=options.preferred
@@ -246,7 +248,8 @@ def checkiso(api,iso=None):
    if not iso:
     print f.get_id()
    elif f.get_id()==iso:
-    return f
+     return f
+ 
  sys.exit(0)
 
 ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
@@ -374,7 +377,8 @@ if cobbler and client:
   cobblerhost=cobblers[client]['host']
   cobbleruser=cobblers[client]['user']
   cobblerpassword=cobblers[client]['password']
-  if cobblers[client].has_key("mac"):cobblermac=cobblers[client]['mac']
+  if cobblers[client].has_key('mac'):cobblermac=cobblers[client]['mac']
+  if not cobblerdns and cobblers[client].has_key('dns'):cobblerdns=cobblers[client]['dns']
  except:
   print ERR_NOCOBBLERFILE
   os._exit(1)
@@ -1087,6 +1091,7 @@ if cobbler:
  s.modify_system(system,'name',name,token)
  s.modify_system(system,'hostname',name,token)
  s.modify_system(system,'profile',profile,token)
+ if cobblerdns:s.modify_system(system,'dns-name',cobblerdns,token)
  #if nextserver:s.modify_system(system,'server',nextserver,token)
  if numinterfaces==1:
   if staticroutes:
