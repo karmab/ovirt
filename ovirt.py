@@ -1091,7 +1091,7 @@ if cobbler:
  s.modify_system(system,'name',name,token)
  s.modify_system(system,'hostname',name,token)
  s.modify_system(system,'profile',profile,token)
- if cobblerdns:s.modify_system(system,'dns-name',cobblerdns,token)
+ if cobblerdns:s.modify_system(system,'dns_name',cobblerdns,token)
  #if nextserver:s.modify_system(system,'server',nextserver,token)
  if numinterfaces==1:
   if staticroutes:
