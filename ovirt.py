@@ -91,7 +91,7 @@ cobblergroup.add_option("-1", "--ip1", dest="ip1", type="string", help="Specify 
 cobblergroup.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
 cobblergroup.add_option("-3", "--ip3", dest="ip3", type="string", help="Specify Third IP")
 cobblergroup.add_option("-4", "--ip4", dest="ip4", type="string", help="Specify Fourth IP")
-cobblergroup.add_option("-5", "--dns", dest="dns", type="string", help="Specify Fourth IP")
+cobblergroup.add_option("-J", "--dns", dest="cobblerdns", type="string", help="Specify Fourth IP")
 parser.add_option_group(cobblergroup)
 
 parser.add_option("-A", "--activate", dest="activate", type="string", help="Activate specified storageDomain")
@@ -131,7 +131,7 @@ ip1=options.ip1
 ip2=options.ip2
 ip3=options.ip3
 ip4=options.ip4
-dns=options.dns
+cobblerdns=options.cobblerdns
 activate=options.activate
 maintenance=options.maintenance
 preferred=options.preferred
