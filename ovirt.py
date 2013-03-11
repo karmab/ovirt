@@ -381,6 +381,7 @@ if cobbler and client:
   if not cobblerdns and cobblers[client].has_key('dns'):cobblerdns=cobblers[client]['dns']
  except:
   print ERR_NOCOBBLERFILE
+  print "Client:%s" % client
   os._exit(1)
 
 if ossl:
@@ -1091,16 +1092,17 @@ if cobbler:
  s.modify_system(system,'name',name,token)
  s.modify_system(system,'hostname',name,token)
  s.modify_system(system,'profile',profile,token)
- if cobblerdns:s.modify_system(system,'dns_name',cobblerdns,token)
  #if nextserver:s.modify_system(system,'server',nextserver,token)
  if numinterfaces==1:
   if staticroutes:
    eth0={"macaddress-eth0":macaddr[0],"static-eth0":1,"ipaddress-eth0":ip1,"subnet-eth0":subnet1,"staticroutes-eth0":staticroutes}
   else:
    eth0={"macaddress-eth0":macaddr[0],"static-eth0":1,"ipaddress-eth0":ip1,"subnet-eth0":subnet1}
+  if cobblerdns:eth0["dnsname-eth0"]="%s.%s" % (name,cobblerdns)
   s.modify_system(system,'modify_interface',eth0,token)
  elif numinterfaces==2:
   eth0={"macaddress-eth0":macaddr[0],"static-eth0":1,"ipaddress-eth0":ip1,"subnet-eth0":subnet1}
+  if cobblerdns:eth0["dnsname-eth0"]="%s.%s" % (name,cobblerdns)
   if staticroutes:
    eth1={"macaddress-eth1":macaddr[1],"static-eth1":1,"ipaddress-eth1":ip2,"subnet-eth1":subnet2,"staticroutes-eth1":staticroutes}
   else:
@@ -1109,6 +1111,7 @@ if cobbler:
   s.modify_system(system,'modify_interface',eth1,token)
  elif numinterfaces==3:
   eth0={"macaddress-eth0":macaddr[0],"static-eth0":1,"ipaddress-eth0":ip1,"subnet-eth0":subnet1}
+  if cobblerdns:eth0["dnsname-eth0"]="%s.%s" % (name,cobblerdns)
   if staticroutes:
    eth1={"macaddress-eth1":macaddr[1],"static-eth1":1,"ipaddress-eth1":ip2,"subnet-eth1":subnet2,"staticroutes-eth1":staticroutes}
   else:
@@ -1119,6 +1122,7 @@ if cobbler:
   s.modify_system(system,'modify_interface',eth2,token)
  elif numinterfaces==4:
   eth0={"macaddress-eth0":macaddr[0],"static-eth0":1,"ipaddress-eth0":ip1,"subnet-eth0":subnet1}
+  if cobblerdns:eth0["dnsname-eth0"]="%s.%s" % (name,cobblerdns)
   if staticroutes:
    eth1={"macaddress-eth1":macaddr[1],"static-eth1":1,"ipaddress-eth1":ip2,"subnet-eth1":subnet2,"staticroutes-eth1":staticroutes}
   else:
