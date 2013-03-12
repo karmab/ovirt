@@ -640,7 +640,7 @@ if len(args) == 1 and not new:
    if sure!="Y":
     print "Not doing anything"
     sys.exit(1)
-  if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
+  if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up" or api.vms.get(name).status.state=="reboot_in_progress":
    api.vms.get(name).stop()
    print "VM %s stopped" % name
   api.vms.get(name).delete() 
