@@ -820,7 +820,7 @@ if len(args) == 1 and not new:
   print "Kernel: %s Initrd:%s Cmdline:%s" % (vm.os.kernel,vm.os.initrd,vm.os.cmdline)
  print "Status: %s" % vm.status.state
  print "Os: %s" % vm.get_os().get_type()
- if vm.status.state=="up":
+ if vm.status.state=="up" or vm.status.state=="wait_for_launch" or vm.status.state=="powering_up":
   host=findhostbyid(api,vm.get_host().get_id())
   print "Host: %s" % host
  preferredhost=vm.get_placement_policy().get_host()
