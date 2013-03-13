@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """
 script to create virtual machines on ovirt/rhev
-used some samples from https://access.redhat.com/knowledge/docs/en-US/Red_Hat_Enterprise_Virtualization/3.1-Beta/html/Developer_Guide/Example_Attaching_an_ISO_Image_to_a_Virtual_Machine_using_Python.html and the http://markmc.fedorapeople.org/rhevm-api/en-US/html/
+used some samples from https://access.redhat.com/knowledge/docs/en-US/Red_Hat_Enterprise_Virtualization/3.1/html/Developer_Guide/index.html and the http://markmc.fedorapeople.org/rhevm-api/en-US/html/
 """
 
 import sys
@@ -173,6 +173,7 @@ template=options.template
 mac1=options.mac1
 #hanging=options.hanging
 macaddr=[]
+low=None
 guestrhel332="rhel_3"
 guestrhel364="rhel_3x64"
 guestrhel432="rhel_4"
@@ -323,6 +324,7 @@ try:
  if not diskformat and default.has_key("diskformat"):diskformat=default["diskformat"]
  if default.has_key("disksize"):disksize=int(default["disksize"])*GB
  if default.has_key("memory"):memory=int(default["memory"])*MB
+ if default.has_key("low"):low=float(default["low"])
  if not storagedomain and default.has_key("storagedomain"):storagedomain=default["storagedomain"]
  if not numinterfaces and default.has_key("numinterfaces"):numinterfaces=int(default["numinterfaces"])
  if not ossl and default.has_key("ssl"):ossl=True
@@ -343,6 +345,7 @@ try:
  if ovirts[client].has_key("disksize"):disksize=int(ovirts[client]["disksize"])*GB
  if ovirts[client].has_key("memory"):memory=int(ovirts[client]["memory"])*MB
  if not storagedomain and ovirts[client].has_key("storagedomain"):storagedomain=ovirts[client]["storagedomain"]
+ if not low and ovirts[client].has_key("low"):storagedomain=float(ovirts[client]["low"])
  if ovirts[client].has_key("numinterfaces"):numinterfaces=int(ovirts[client]["numinterfaces"])
  if ovirts[client].has_key("netinterface"):diskinterface=ovirts[client]["netinterface"]
  if ovirts[client].has_key("ssl"):ossl=True
@@ -984,7 +987,7 @@ elif numinterfaces == 4:
 #VM CREATION IN OVIRT
  
 try:
-#TODO check that clu and storagedomain exist and that there is space there
+ #TODO check that clu and storagedomain exist and that there is space there
  if memory2:memory=memory2
  if disksize2:disksize=disksize2
  if not memory or not disksize:
@@ -997,6 +1000,12 @@ try:
   os._exit(1)
  clu=api.clusters.get(name=clu)
  storagedomain=api.storagedomains.get(name=storagedomain)
+ try:
+  disk1=params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True)
+  api.disks.add(disk1)
+ except:
+  print "Insufficient space in storage domain.Leaving..."
+  os._exit(1)
  #boot order
  boot=[params.Boot(dev=boot1),params.Boot(dev=boot2)]
  #vm creation
@@ -1029,7 +1038,8 @@ try:
      api.vms.get(name).tags.add(tg)
  api.vms.get(name).update()
  #add disks
- api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True))
+ #api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True))
+ api.vms.get(name).disks.add(disk1)
  print "VM %s created" % name
  if cobbler:
   #retrieve MACS for cobbler
