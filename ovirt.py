@@ -854,7 +854,7 @@ if len(args) == 1 and not new:
   if vm.status.state=="down":
    print "Machine down"
    sys.exit(1)
-  while api.vms.get(name=name).status.state=="wait_for_launch" or api.vms.get(name=name).status.state=="powering_up":
+  while api.vms.get(name=name).status.state=="wait_for_launch":#or api.vms.get(name=name).status.state=="powering_up":
    print "Waiting for machine to be up..."
    time.sleep(5)
   if not oca or not os.path.exists(oca):
