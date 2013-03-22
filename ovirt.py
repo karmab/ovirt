@@ -1,7 +1,8 @@
 #!/usr/bin/python
 """
 script to create virtual machines on ovirt/rhev
-used some samples from https://access.redhat.com/knowledge/docs/en-US/Red_Hat_Enterprise_Virtualization/3.1/html/Developer_Guide/index.html and the http://markmc.fedorapeople.org/rhevm-api/en-US/html/
+used some rhev samples from https://access.redhat.com/knowledge/docs/en-US/Red_Hat_Enterprise_Virtualization/3.1/html/Developer_Guide/index.html and the http://markmc.fedorapeople.org/rhevm-api/en-US/html/
+used http://theforeman.org/api.html for foreman
 """
 
 import sys
@@ -13,6 +14,10 @@ import urllib
 import ConfigParser
 from ovirtsdk.api import API
 from ovirtsdk.xml import params
+import pycurl
+import StringIO
+import optparse
+
 
 __author__ = "Karim Boumedhel"
 __credits__ = ["Karim Boumedhel"]
@@ -24,6 +29,7 @@ __status__ = "Production"
 
 ERR_NOOVIRTFILE="You need to create a correct ovirt.ini file in your home directory.Check documentation"
 ERR_NOCOBBLERFILE="You need to create a correct cobbler.ini file in your home directory.Check documentation"
+ERR_NOFOREMANFILE="You need to create a correct foreman.ini file in your home directory.Check documentation"
 ERR_CLIENTNOTFOUND="Client not found"
 ERR_CLIENTNOCONF="Client not found in conf file"
 ERR_CLIENTNOPROFILE="Missing client file in your home directory.Check documentation"
@@ -69,7 +75,7 @@ actiongroup.add_option("-z", "--cmdline", dest="cmdline", type="string", help="S
 actiongroup.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom.If you only provivde one options, second boot option will be set to None")
 #actiongroup.add_option("-Q", "--hanging", dest="hanging", action="store_true", help="Check hanging tasks")
 actiongroup.add_option("-K", "--kill", dest="kill", action="store_true" , help="specify VM to kill in virtual center.Confirmation will be asked unless -F/--forcekill flag is set.VM will also be killed in cobbler server if -Z/-cobbler flag set")
-actiongroup.add_option("-F", "--forcekill", dest="forcekill", action="store_true", help="Dont ask confirmation when killing a VM")
+actiongroup.add_option("-Q", "--forcekill", dest="forcekill", action="store_true", help="Dont ask confirmation when killing a VM")
 actiongroup.add_option("-5", "--template", dest="template", type="string", help="Deploy VM from template")
 actiongroup.add_option("-6", "--import", dest="importvm", type="string", help="Import specified VM")
 actiongroup.add_option("-7", "--runonce", dest="runonce", action="store_true", help="Runonce VM.you will need to pass kernel,initrd and cmdline")
@@ -91,8 +97,14 @@ cobblergroup.add_option("-1", "--ip1", dest="ip1", type="string", help="Specify 
 cobblergroup.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
 cobblergroup.add_option("-3", "--ip3", dest="ip3", type="string", help="Specify Third IP")
 cobblergroup.add_option("-4", "--ip4", dest="ip4", type="string", help="Specify Fourth IP")
-cobblergroup.add_option("-J", "--dns", dest="cobblerdns", type="string", help="Specify Fourth IP")
+cobblergroup.add_option("-J", "--dns", dest="dns", type="string", help="Dns domain")
 parser.add_option_group(cobblergroup)
+
+foremangroup = optparse.OptionGroup(parser, "Foreman options")
+foremangroup.add_option("-F", "--foreman", dest="foreman", action="store_true", help="Foreman support")
+#foremangroup.add_option("-1", "--ip1", dest="ip1", type="string", help="Specify First IP")
+#foremangroup.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
+parser.add_option_group(foremangroup)
 
 parser.add_option("-A", "--activate", dest="activate", type="string", help="Activate specified storageDomain")
 parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
@@ -131,7 +143,7 @@ ip1=options.ip1
 ip2=options.ip2
 ip3=options.ip3
 ip4=options.ip4
-cobblerdns=options.cobblerdns
+dns=options.dns
 activate=options.activate
 maintenance=options.maintenance
 preferred=options.preferred
@@ -156,6 +168,7 @@ adddisk=options.adddisk
 if adddisk:adddisk=adddisk*GB
 bad=options.bad
 cobbler=options.cobbler
+foreman=options.foreman
 nolaunch=options.nolaunch
 search=options.search
 profile = options.profile
@@ -252,6 +265,45 @@ def checkiso(api,iso=None):
      return f
  
  sys.exit(0)
+
+def foremancreate(foremanhost,name,dns=None):
+ url="http://%s/hosts" % (foremanhost)
+ #mac="00:00:00:00:00:01"
+ osid=2
+ envid=1
+ archid=1
+ puppetid=1
+ ptableid=1
+ if dns:name="%s.%s" % (name,dns)
+ #postdata='{"host":{"name":"%s","ip":"%s","mac":"%s", "operatingsystem_id":"%s","environment_id":"%s", "architecture_id": "%s", "puppet_proxy_id":"%s", "ptable_id":"%s" }}' % (name,ip,mac,osid,envid,archid,puppetid,ptableid)
+ postdata='{"host":{"name":"%s", "operatingsystem_id":"%s","environment_id":"%s", "architecture_id": "%s", "puppet_proxy_id":"%s", "ptable_id":"%s" }}' % (name,osid,envid,archid,puppetid,ptableid)
+ c = pycurl.Curl()
+ b = StringIO.StringIO()
+ c.setopt(pycurl.URL, url)
+ c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json"])
+ c.setopt(pycurl.HTTPAUTH, pycurl.HTTPAUTH_BASIC)
+ #c.setopt(pycurl.USERPWD, password)
+ c.setopt(pycurl.SSL_VERIFYPEER, False)
+ c.setopt(pycurl.SSL_VERIFYHOST, False)
+ c.setopt( pycurl.POST, 1 )
+ c.setopt(pycurl.POSTFIELDS, postdata)
+ c.perform()
+ print "VM %s created in Foreman" % name
+
+def foremandelete(foremanhost,name,dns=None):
+ if dns:name="%s.%s" % (name,dns)
+ url="http://%s/hosts/%s" % (foremanhost,name)
+ c = pycurl.Curl()
+ b = StringIO.StringIO()
+ c.setopt(pycurl.URL, url)
+ c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json"])
+ c.setopt(pycurl.HTTPAUTH, pycurl.HTTPAUTH_BASIC)
+ #c.setopt(pycurl.USERPWD, password)
+ c.setopt(pycurl.SSL_VERIFYPEER, False)
+ c.setopt(pycurl.SSL_VERIFYHOST, False)
+ c.setopt(pycurl.CUSTOMREQUEST, 'DELETE')
+ print "VM %s deleted in Foreman" % name
+
 
 ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
 #thin provisioning
@@ -381,11 +433,39 @@ if cobbler and client:
   cobbleruser=cobblers[client]['user']
   cobblerpassword=cobblers[client]['password']
   if cobblers[client].has_key('mac'):cobblermac=cobblers[client]['mac']
-  if not cobblerdns and cobblers[client].has_key('dns'):cobblerdns=cobblers[client]['dns']
+  if not dns and cobblers[client].has_key('dns'):dns=cobblers[client]['dns']
  except:
   print ERR_NOCOBBLERFILE
   print "Client:%s" % client
   os._exit(1)
+
+#parse foreman client auth file
+if foreman and client:
+ foremanconffile="%s/foreman.ini" % (os.environ['HOME'])
+ if not os.path.exists(foremanconffile):
+  print "Missing %s in your  home directory.Check documentation" % foremanconffile
+  sys.exit(1)
+ try:
+  c = ConfigParser.ConfigParser()
+  c.read(foremanconffile)
+  foremans={}
+  for cli in c.sections():
+   for option in  c.options(cli):
+    if not foremans.has_key(cli):
+     foremans[cli]={option : c.get(cli,option)}
+    else:
+     foremans[cli][option]=c.get(cli,option)
+  foremanhost=foremans[client]['host']
+  #foremanuser=foreman[client]['user']
+  #foremanpassword=foreman[client]['password']
+  if foremans[client].has_key('mac'):foremanmac=foremans[client]['mac']
+ except:
+  print ERR_NOFOREMANFILE
+  print "Client:%s" % client
+  os._exit(1)
+
+
+
 
 if ossl:
  url = "https://%s:%s/api" % (ohost,oport)
@@ -576,6 +656,7 @@ if template:
 if len(args) == 1 and not new:
  name=args[0]
  vm=api.vms.get(name=name)
+ if kill and foreman and not vm:foremandelete(foremanhost,name,dns)
  if kill and cobbler and not vm:
   s = xmlrpclib.Server("http://%s/cobbler_api" % cobblerhost)
   token = s.login(cobbleruser,cobblerpassword)
@@ -628,6 +709,7 @@ if len(args) == 1 and not new:
    print "VM %s started in runonce mode" % name
   sys.exit(0)
  if kill:
+  if foreman:foremandelete(foremanhost,name)
   if cobbler:
    s = xmlrpclib.Server("http://%s/cobbler_api" % cobblerhost)
    token = s.login(cobbleruser,cobblerpassword)
@@ -781,14 +863,24 @@ if len(args) == 1 and not new:
   if not storagedomain:
    print "No Storage Domain specified"
    sys.exit(1)
-  else:
-   if not disksize and not disksize2:
-    print "No Disksize specified"
-    sys.exit(1)
-   if diskformat=="raw":sparse=False
-   storagedomain=api.storagedomains.get(name=storagedomain)
-   api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=adddisk,type_="data",status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=False))
-   print "Disk with size %d GB added" % (adddisk/1024/1024/1024)
+  if diskformat=="raw":sparse=False
+  storagedomain=api.storagedomains.get(name=storagedomain)
+  try:
+   disknumbers=[]
+   for disk in api.vms.get(name).disks.list():
+    if "%s_Disk" % (name) in disk.name:disknumbers.append(int(disk.name[-1]))
+   disknumber=max(disknumbers)+1
+   disk1=params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),name="%s_Disk%d" %(name,disknumber) ,size=adddisk,type_='data',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=False)
+   disk1=api.disks.add(disk1)
+   disk1id=disk1.get_id()
+  except:
+   print "Insufficient space in storage domain.Leaving..."
+   os._exit(1)
+  while api.disks.get(id=disk1id).get_status().get_state() != "ok":
+   print "Waiting for disk to be available..."
+   time.sleep(5)
+  api.vms.get(name).disks.add(disk1)
+  print "Disk with size %d GB added" % (adddisk/1024/1024/1024)
  if start: 
   if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
    print "VM allready started"
@@ -842,6 +934,7 @@ if len(args) == 1 and not new:
    size=disk.size/1024/1024/1024
    #for stor in disk.get_storage_domains().get_storage_domain():print stor.name
    print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state())
+   
  for nic in vm.nics.list():
   net=api.networks.get(id=nic.network.id).get_name()
   print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,net,nic.interface)
@@ -1001,8 +1094,9 @@ try:
  clu=api.clusters.get(name=clu)
  storagedomain=api.storagedomains.get(name=storagedomain)
  try:
-  disk1=params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True)
-  api.disks.add(disk1)
+  disk1=params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),name="%s_Disk1" % (name),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True)
+  disk1=api.disks.add(disk1)
+  disk1id=disk1.get_id()
  except:
   print "Insufficient space in storage domain.Leaving..."
   os._exit(1)
@@ -1037,8 +1131,10 @@ try:
      tagfound=True
      api.vms.get(name).tags.add(tg)
  api.vms.get(name).update()
- #add disks
- #api.vms.get(name).disks.add(params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True))
+ #TO FIX!!!
+ while api.disks.get(id=disk1id).get_status().get_state() != "ok":
+  print "Waiting for disk creation to complete..."
+  time.sleep(5)
  api.vms.get(name).disks.add(disk1)
  print "VM %s created" % name
  if cobbler:
@@ -1049,6 +1145,10 @@ try:
 except:
  print "Failure creating VM"
  os._exit(1)
+
+
+#VM CREATION IN FOREMAN
+if foreman:foremancreate(foremanhost,name,dns)
 
 
 #VM CREATION IN COBBLER
@@ -1108,11 +1208,11 @@ if cobbler:
    eth0={"macaddress-eth0":macaddr[0],"static-eth0":1,"ipaddress-eth0":ip1,"subnet-eth0":subnet1,"staticroutes-eth0":staticroutes}
   else:
    eth0={"macaddress-eth0":macaddr[0],"static-eth0":1,"ipaddress-eth0":ip1,"subnet-eth0":subnet1}
-  if cobblerdns:eth0["dnsname-eth0"]="%s.%s" % (name,cobblerdns)
+  if dns:eth0["dnsname-eth0"]="%s.%s" % (name,dns)
   s.modify_system(system,'modify_interface',eth0,token)
  elif numinterfaces==2:
   eth0={"macaddress-eth0":macaddr[0],"static-eth0":1,"ipaddress-eth0":ip1,"subnet-eth0":subnet1}
-  if cobblerdns:eth0["dnsname-eth0"]="%s.%s" % (name,cobblerdns)
+  if dns:eth0["dnsname-eth0"]="%s.%s" % (name,dns)
   if staticroutes:
    eth1={"macaddress-eth1":macaddr[1],"static-eth1":1,"ipaddress-eth1":ip2,"subnet-eth1":subnet2,"staticroutes-eth1":staticroutes}
   else:
@@ -1121,7 +1221,7 @@ if cobbler:
   s.modify_system(system,'modify_interface',eth1,token)
  elif numinterfaces==3:
   eth0={"macaddress-eth0":macaddr[0],"static-eth0":1,"ipaddress-eth0":ip1,"subnet-eth0":subnet1}
-  if cobblerdns:eth0["dnsname-eth0"]="%s.%s" % (name,cobblerdns)
+  if dns:eth0["dnsname-eth0"]="%s.%s" % (name,dns)
   if staticroutes:
    eth1={"macaddress-eth1":macaddr[1],"static-eth1":1,"ipaddress-eth1":ip2,"subnet-eth1":subnet2,"staticroutes-eth1":staticroutes}
   else:
@@ -1132,7 +1232,7 @@ if cobbler:
   s.modify_system(system,'modify_interface',eth2,token)
  elif numinterfaces==4:
   eth0={"macaddress-eth0":macaddr[0],"static-eth0":1,"ipaddress-eth0":ip1,"subnet-eth0":subnet1}
-  if cobblerdns:eth0["dnsname-eth0"]="%s.%s" % (name,cobblerdns)
+  if dns:eth0["dnsname-eth0"]="%s.%s" % (name,dns)
   if staticroutes:
    eth1={"macaddress-eth1":macaddr[1],"static-eth1":1,"ipaddress-eth1":ip2,"subnet-eth1":subnet2,"staticroutes-eth1":staticroutes}
   else:
