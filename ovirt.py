@@ -866,11 +866,19 @@ if len(args) == 1 and not new:
   if diskformat=="raw":sparse=False
   storagedomain=api.storagedomains.get(name=storagedomain)
   try:
-   disknumbers=[]
-   for disk in api.vms.get(name).disks.list():
-    if "%s_Disk" % (name) in disk.name:disknumbers.append(int(disk.name[-1]))
-   disknumber=max(disknumbers)+1
-   disk1=params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),name="%s_Disk%d" %(name,disknumber) ,size=adddisk,type_='data',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=False)
+   disks=api.vms.get(name).disks.list()
+   if len(disks)==0:
+    diskname="%s_Disk1" %(name)
+   else:
+    disknumbers=[]
+    for disk in disks:
+     if "%s_Disk" % (name) in disk.name:disknumbers.append(int(disk.name[-1]))
+    if len(disknumbers)==0:
+     diskname="%s_Disk1" %(name)
+    else:
+     disknumber=max(disknumbers)+1
+     diskname="%s_Disk%d" %(name,disknumber)
+   disk1=params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),name=diskname ,size=adddisk,type_='data',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=False)
    disk1=api.disks.add(disk1)
    disk1id=disk1.get_id()
   except:
@@ -880,7 +888,13 @@ if len(args) == 1 and not new:
    print "Waiting for disk to be available..."
    time.sleep(5)
   api.vms.get(name).disks.add(disk1)
-  print "Disk with size %d GB added" % (adddisk/1024/1024/1024)
+  print api.vms.get(name).disks.get(id=disk1id)
+  while not api.vms.get(name).disks.get(id=disk1id):
+   print api.vms.get(name).disks.get(id=disk1id)
+   print "Waiting for disk to be added to VM..."
+   time.sleep(2)
+  api.vms.get(name).disks.get(id=disk1id).activate()
+  print "Disk %s with size %d GB added" % (diskname,adddisk/1024/1024/1024)
  if start: 
   if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
    print "VM allready started"
@@ -898,7 +912,7 @@ if len(args) == 1 and not new:
     print "VM %s started" % name
  if restart:
   if api.vms.get(name).status.state!="down":api.vms.get(name).stop() 
-  api.vms.get(name).start() 
+  
   print "VM %s restarted" % name
  vm=api.vms.get(name=name)
  if not vm:
@@ -932,8 +946,11 @@ if len(args) == 1 and not new:
  print "Memory: %dMb" % memory
  for disk in vm.disks.list():
    size=disk.size/1024/1024/1024
-   #for stor in disk.get_storage_domains().get_storage_domain():print stor.name
-   print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state())
+   diskid=disk.get_id()
+   for stor in api.disks.get(id=diskid).get_storage_domains().get_storage_domain():
+    storid=stor.get_id()
+    storname=api.storagedomains.get(id=storid).name
+   print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s active: %s storagedomain: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state(),disk.get_active(),storname)
    
  for nic in vm.nics.list():
   net=api.networks.get(id=nic.network.id).get_name()
@@ -1033,7 +1050,7 @@ if profiles[profile].has_key("iso"):iso=profiles[profile]["iso"]
 if profiles[profile].has_key("storagedomain"):storagedomain=profiles[profile]["storagedomain"]
 if profiles[profile].has_key("netinterface"):netinterface=profiles[profile]["netinterface"]
 if profiles[profile].has_key("diskinterface"):netinterface=profiles[profile]["diskinterface"]
-if profiles.has_key("disksize"):disksize=int(profiles[profile]["disksize"])*GB
+if profiles[profile].has_key("disksize"):disksize=int(profiles[profile]["disksize"])*GB
 if not guestid and profiles[profile].has_key("guestid"):guestid=profiles[profile]["guestid"]
 if not tags and profiles[profile].has_key("tags"):tags=profiles[profile]["tags"]
 if not kernel and profiles[profile].has_key("kernel"):kernel=profiles[profile]["kernel"]
@@ -1076,6 +1093,10 @@ elif numinterfaces == 4:
  else:
   nets=[net1,net2,net3,net4]
 
+if not disksize:
+ print "Foireux"
+ os._exit(1)
+ 
 
 #VM CREATION IN OVIRT
  
@@ -1131,11 +1152,14 @@ try:
      tagfound=True
      api.vms.get(name).tags.add(tg)
  api.vms.get(name).update()
- #TO FIX!!!
  while api.disks.get(id=disk1id).get_status().get_state() != "ok":
   print "Waiting for disk creation to complete..."
   time.sleep(5)
  api.vms.get(name).disks.add(disk1)
+ while not api.vms.get(name).disks.get(id=disk1id):
+  print "Waiting for disk to be added to VM..."
+  time.sleep(2)
+ api.vms.get(name).disks.get(id=disk1id).activate()
  print "VM %s created" % name
  if cobbler:
   #retrieve MACS for cobbler
