@@ -1142,7 +1142,6 @@ if not disksize:
 #VM CREATION IN FOREMAN
 #if foreman:foremancreate(foremanhost,name,dns,ip=ip1)
 if foreman:foremancreate(foremanhost,name,dns=dns,ip=ip1,osid=foremanos,envid=foremanenv,archid=foremanarch,puppetid=foremanpuppet,ptableid=foremanptable,hostgroup=hostgroup)
-sys.exit(0)
 
 #VM CREATION IN OVIRT
 try:
