@@ -5,19 +5,18 @@ used some rhev samples from https://access.redhat.com/knowledge/docs/en-US/Red_H
 used http://theforeman.org/api.html for foreman
 """
 
-import sys
+import pycurl
 import optparse
 import os
+import simplejson
+import sys
 import time
 import xmlrpclib
 import urllib
 import ConfigParser
 from ovirtsdk.api import API
 from ovirtsdk.xml import params
-import pycurl
 import StringIO
-import optparse
-
 
 __author__ = "Karim Boumedhel"
 __credits__ = ["Karim Boumedhel"]
@@ -102,7 +101,7 @@ parser.add_option_group(cobblergroup)
 
 foremangroup = optparse.OptionGroup(parser, "Foreman options")
 foremangroup.add_option("-F", "--foreman", dest="foreman", action="store_true", help="Foreman support")
-#foremangroup.add_option("-1", "--ip1", dest="ip1", type="string", help="Specify First IP")
+foremangroup.add_option("--hostgroup", dest="hostgroup", type="string", help="Foreman hostgroup")
 #foremangroup.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
 parser.add_option_group(foremangroup)
 
@@ -204,7 +203,8 @@ guestwindows2003="windows_2003"
 guestwindows200364="windows_2003x64"
 guestwindows2008="windows_2008"
 guestwindows200864="windows_2008x64"
-
+foremanos,foremanenv,foremanarch,foremanpuppet,foremanptable=None,None,None,None,None
+hostgroup=options.hostgroup
 
 def findhostbyid(api,id):
  hosts=api.hosts
@@ -266,17 +266,7 @@ def checkiso(api,iso=None):
  
  sys.exit(0)
 
-def foremancreate(foremanhost,name,dns=None):
- url="http://%s/hosts" % (foremanhost)
- #mac="00:00:00:00:00:01"
- osid=2
- envid=1
- archid=1
- puppetid=1
- ptableid=1
- if dns:name="%s.%s" % (name,dns)
- #postdata='{"host":{"name":"%s","ip":"%s","mac":"%s", "operatingsystem_id":"%s","environment_id":"%s", "architecture_id": "%s", "puppet_proxy_id":"%s", "ptable_id":"%s" }}' % (name,ip,mac,osid,envid,archid,puppetid,ptableid)
- postdata='{"host":{"name":"%s", "operatingsystem_id":"%s","environment_id":"%s", "architecture_id": "%s", "puppet_proxy_id":"%s", "ptable_id":"%s" }}' % (name,osid,envid,archid,puppetid,ptableid)
+def foremando(url,actiontype=None,postdata=None):
  c = pycurl.Curl()
  b = StringIO.StringIO()
  c.setopt(pycurl.URL, url)
@@ -285,25 +275,76 @@ def foremancreate(foremanhost,name,dns=None):
  #c.setopt(pycurl.USERPWD, password)
  c.setopt(pycurl.SSL_VERIFYPEER, False)
  c.setopt(pycurl.SSL_VERIFYHOST, False)
- c.setopt( pycurl.POST, 1 )
- c.setopt(pycurl.POSTFIELDS, postdata)
+ if actiontype=="POST":
+  c.setopt( pycurl.POST, 1 )
+  c.setopt(pycurl.POSTFIELDS,postdata)
+ elif actiontype=="DELETE":
+  c.setopt(pycurl.CUSTOMREQUEST, 'DELETE')
+ elif actiontype=="PUT":
+  c.setopt( pycurl.CUSTOMREQUEST, "PUT" )
+  c.setopt(pycurl.POSTFIELDS, postdata)
+ #else:
+ c.setopt(pycurl.WRITEFUNCTION, b.write)
  c.perform()
- print "VM %s created in Foreman" % name
+ #if not actiontype in ["POST","PUT","DELETE"]:
+ try:
+  result = b.getvalue()
+  result = simplejson.loads(result)
+  result=eval(str(result))
+  return result
+ except:
+  return None
+
+def foremangetid(foreman,searchtype,searchname):
+ if searchtype=="puppet":
+  url="http://%s/api/smart_proxies?type=%s"  % (foreman,searchtype)
+  result=foremando(url)
+  return result[0]["smart_proxy"]["id"]
+ else:
+  url="http://%s/api/%s/%s" % (foreman,searchtype,searchname)
+  result=foremando(url)
+  return str(result[searchtype[:-1]]["id"])
+
+def foremancreate(foremanhost,name,dns=None,osid=None,envid=None,archid=None,puppetid=None,ptableid=None,powerup=None,ip=None,mac=None,memory=None,core=None,computeid=None,hostgroup=None):
+ url="http://%s/hosts" % (foremanhost)
+ if dns:name="%s.%s" % (name,dns)
+ if not osid or not envid or not archid or not puppetid:
+  print "Missing Elements for vm s creation at foreman level.please check documentation"
+  return
+ osid=foremangetid(foremanhost,"operatingsystems",osid)
+ envid=foremangetid(foremanhost,"environments",envid)
+ archid=foremangetid(foremanhost,"architectures",archid)
+ puppetid=foremangetid(foremanhost,"puppet",puppetid)
+ postdata={}
+ postdata["host"]={"name":name, "operatingsystem_id":osid,"environment_id":envid, "architecture_id":archid, "puppet_proxy_id":puppetid}
+ if ip:postdata["host"]["ip"]=ip
+ if mac:postdata["host"]["mac"]=mac
+ if computeid:
+  computeid=foremangetid(foremanhost,"compute_resources",computeid)
+  postdata["host"]["compute_resource_id"]=computeid
+ if hostgroup:
+  hostgroupid=foremangetid(foremanhost,"hostgroups",hostgroup)
+  postdata["host"]["hostgroup_id"]=hostgroupid
+ if ptableid:
+  ptableid=foremangetid(foremanhost,"ptables",ptableid)
+  postdata["host"]["ptable_id"]=hostgroupid
+ postdata="%s" % str(postdata).replace("'",'"')
+ #print postdata
+ result=foremando(url,actiontype="POST",postdata=postdata)
+ if not result.has_key('errors'):
+  print "VM %s created in Foreman" % name
+ else:
+  print "VM %s not created in Foreman because %s" % (name,result["errors"][0])
+ 
 
 def foremandelete(foremanhost,name,dns=None):
  if dns:name="%s.%s" % (name,dns)
- url="http://%s/hosts/%s" % (foremanhost,name)
- c = pycurl.Curl()
- b = StringIO.StringIO()
- c.setopt(pycurl.URL, url)
- c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json"])
- c.setopt(pycurl.HTTPAUTH, pycurl.HTTPAUTH_BASIC)
- #c.setopt(pycurl.USERPWD, password)
- c.setopt(pycurl.SSL_VERIFYPEER, False)
- c.setopt(pycurl.SSL_VERIFYHOST, False)
- c.setopt(pycurl.CUSTOMREQUEST, 'DELETE')
- print "VM %s deleted in Foreman" % name
-
+ url="http://%s/hosts/%s" % (foremanhost,name) 
+ result=foremando(url,actiontype="DELETE")
+ if result:
+  print "VM %s deleted in Foreman" % name
+ else:
+  print "Nothing to do in foreman"
 
 ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
 #thin provisioning
@@ -405,7 +446,7 @@ try:
  if ovirts[client].has_key("org"):oorg=ovirts[client]["org"]
  #if ovirts[client].has_key("runonce"):runonce=True
 except KeyError,e:
- print "Problem parsing your ini file:Missing parameter %s" % e
+ print "Problem parsing ovirt ini file:Missing parameter %s" % e
  os._exit(1)
 
 #TODO:check necessary parameters exist for a valid ovirt connection or exits
@@ -459,12 +500,16 @@ if foreman and client:
   #foremanuser=foreman[client]['user']
   #foremanpassword=foreman[client]['password']
   if foremans[client].has_key('mac'):foremanmac=foremans[client]['mac']
+  if foremans[client].has_key('os'):foremanos=foremans[client]['os']
+  if foremans[client].has_key('env'):foremanenv=foremans[client]['env']
+  if foremans[client].has_key('arch'):foremanarch=foremans[client]['arch']
+  if foremans[client].has_key('puppet'):foremanpuppet=foremans[client]['puppet']
+  if foremans[client].has_key('ptable'):foremanptable=foremans[client]['ptable']
+  if foremans[client].has_key('dns'):dns=foremans[client]['dns']
  except:
   print ERR_NOFOREMANFILE
   print "Client:%s" % client
   os._exit(1)
-
-
 
 
 if ossl:
@@ -497,10 +542,6 @@ if activate:
 if maintenance:
  switchstoragedomain(api,maintenance,False) 
  sys.exit(0) 
-
-#if hanging:
-# print dir(api)
-# sys.exit(0) 
 
 #LIST HOSTS
 if listhosts:
@@ -662,15 +703,14 @@ if len(args) == 1 and not new:
   token = s.login(cobbleruser,cobblerpassword)
   system=s.find_system({"name":name})
   if system==[]:
-   print "Nothing to do"
+   print "Nothing to do in cobbler"
   else:
    s.remove_system(name,token)
    s.sync(token)
    print "%s sucessfully killed in %s" % (name,cobblerhost)
-  sys.exit(0)
  if not vm:
-  print "VM %s not found.Leaving..." % name
-  sys.exit(1)
+   print "Nothing to do in ovirt"
+   sys.exit(1)
  if runonce and not new:
   if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
    print "VM allready started"
@@ -715,7 +755,7 @@ if len(args) == 1 and not new:
    token = s.login(cobbleruser,cobblerpassword)
    system=s.find_system({"name":name})
    if system==[]:
-    print "%s not found in cobbler...Not doing anything at this level" % (name)
+    print "Nothing to do in cobbler"
    else:
     s.remove_system(name,token)
     s.sync(token)
@@ -1057,6 +1097,7 @@ if not kernel and profiles[profile].has_key("kernel"):kernel=profiles[profile]["
 if not initrd and profiles[profile].has_key("initrd"):initrd=profiles[profile]["initrd"]
 if not cmdline and profiles[profile].has_key("cmdline"):cmdline=profiles[profile]["cmdline"]
 if not runonce and profiles[profile].has_key("runonce"):runonce=True
+if not hostgroup and profiles[profile].has_key("hostgroup"):hostgroup=profiles[profile]["hostgroup"]
 
 if extra:cmdline="%s %s" %(cmdline,extra)
 #grab nets 
@@ -1094,12 +1135,16 @@ elif numinterfaces == 4:
   nets=[net1,net2,net3,net4]
 
 if not disksize:
- print "Foireux"
+ print "Missing disksize...Check documentation"
  os._exit(1)
  
 
+#VM CREATION IN FOREMAN
+#if foreman:foremancreate(foremanhost,name,dns,ip=ip1)
+if foreman:foremancreate(foremanhost,name,dns=dns,ip=ip1,osid=foremanos,envid=foremanenv,archid=foremanarch,puppetid=foremanpuppet,ptableid=foremanptable,hostgroup=hostgroup)
+sys.exit(0)
+
 #VM CREATION IN OVIRT
- 
 try:
  #TODO check that clu and storagedomain exist and that there is space there
  if memory2:memory=memory2
@@ -1169,11 +1214,6 @@ try:
 except:
  print "Failure creating VM"
  os._exit(1)
-
-
-#VM CREATION IN FOREMAN
-if foreman:foremancreate(foremanhost,name,dns)
-
 
 #VM CREATION IN COBBLER
 #grab ips and extra routes for cobbler
