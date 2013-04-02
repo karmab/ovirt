@@ -1204,14 +1204,14 @@ try:
   print "Waiting for disk to be added to VM..."
   time.sleep(2)
  api.vms.get(name).disks.get(id=disk1id).activate()
- print "VM %s created" % name
+ print "VM %s created in ovirt" % name
  if cobbler:
   #retrieve MACS for cobbler
   vm=api.vms.get(name=name)
   for nic in vm.nics.list():
    macaddr.append(nic.mac.address)
 except:
- print "Failure creating VM"
+ print "Failure creating VM in ovirt"
  os._exit(1)
 
 #VM CREATION IN COBBLER
