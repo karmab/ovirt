@@ -505,7 +505,7 @@ if foreman and client:
   if foremans[client].has_key('arch'):foremanarch=foremans[client]['arch']
   if foremans[client].has_key('puppet'):foremanpuppet=foremans[client]['puppet']
   if foremans[client].has_key('ptable'):foremanptable=foremans[client]['ptable']
-  if foremans[client].has_key('dns'):dns=foremans[client]['dns']
+  if not dns and foremans[client].has_key('dns'):dns=foremans[client]['dns']
  except:
   print ERR_NOFOREMANFILE
   print "Client:%s" % client
