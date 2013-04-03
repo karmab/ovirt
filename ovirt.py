@@ -709,7 +709,7 @@ if len(args) == 1 and not new:
    s.sync(token)
    print "%s sucessfully killed in %s" % (name,cobblerhost)
  if not vm:
-   print "Nothing to do in ovirt"
+   print "Vm %s not found in ovirt" % name
    sys.exit(1)
  if runonce and not new:
   if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
