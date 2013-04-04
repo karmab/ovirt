@@ -615,10 +615,15 @@ if summary:
      print "Network: %s  (Set as display network)" % net.name
     else:
      print "Network: %s " % net.name
-   for h in hosts:
+   for h in hosts: 
+    spm=h.get_storage_manager().get_valueOf_()
+    if spm=="true":
+     spm="SPM"
+    else:
+     spm=""
     #print "Host: %s Cpu: %s Memory:%sGb" % (h.name,h.cpu.name,h.memory/1024/1024/1024)
     cluh=api.clusters.get(id=h.get_cluster().get_id()).get_name()
-    if cluh == clu.name:print "Host: %s Cpu: %s" % (h.name,h.cpu.name)
+    if cluh == clu.name:print "Host: %s Cpu: %s %s" % (h.name,h.cpu.name,spm)
   print "\n" 
  #handles clusters with no associated DC
  if len(nodcs)>0:
@@ -630,7 +635,7 @@ if summary:
      print "Network: %s  (Set as display network)" % net.name
     else:
      print "Network: %s " % net.name
-   for h in hosts:
+   for h in hosts: 
     cluh=api.clusters.get(id=h.get_cluster().get_id()).get_name()
     if cluh == clu.name:print "Host: %s Cpu: %s" % (h.name,h.cpu.name)
  sys.exit(0)
