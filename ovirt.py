@@ -103,7 +103,6 @@ foremangroup = optparse.OptionGroup(parser, "Foreman options")
 foremangroup.add_option("-F", "--foreman", dest="foreman", action="store_true", help="Foreman support")
 foremangroup.add_option("--hostgroup", dest="hostgroup", type="string", help="Foreman hostgroup")
 #foremangroup.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
-foremangroup.add_option("--v2", dest="foremanv2", action="store_true", help="Activate Api V2 support. necessary to add class to a host upon creation")
 foremangroup.add_option("--puppetclasses", dest="puppetclasses", type="string", help="Puppet classes to add to host, separated by ,")
 parser.add_option_group(foremangroup)
 
@@ -206,7 +205,6 @@ guestwindows200364="windows_2003x64"
 guestwindows2008="windows_2008"
 guestwindows200864="windows_2008x64"
 foremanos,foremanenv,foremanarch,foremanpuppet,foremanptable=None,None,None,None,None
-foremanv2=options.foremanv2
 hostgroup=options.hostgroup
 puppetclasses=options.puppetclasses
 
@@ -270,11 +268,11 @@ def checkiso(api,iso=None):
  
  sys.exit(0)
 
-def foremando(url,actiontype=None,postdata=None):
+def foremando(url,actiontype=None,postdata=None,v2=False):
  c = pycurl.Curl()
  b = StringIO.StringIO()
  c.setopt(pycurl.URL, url)
- if foremanv2:
+ if v2:
   c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json","Accept: version=2"])
  else:
   c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json"])
@@ -364,7 +362,7 @@ def foremanaddpuppetclass(foremanhostname,puppetclasses):
  for puppetclass in puppetclasses:
   puppetclassid=foremangetid(foreman,"puppetclasses",puppetclass)
   url="http://%s/api/hosts/%s/puppetclasses/%s" % (foremanhost,name,puppetclassid)
-  foremando(url,actiontype="PUT")
+  foremando(url=url,actiontype="PUT",v2=True)
 
 ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
 #thin provisioning
@@ -525,7 +523,6 @@ if foreman and client:
   if foremans[client].has_key('arch'):foremanarch=foremans[client]['arch']
   if foremans[client].has_key('puppet'):foremanpuppet=foremans[client]['puppet']
   if foremans[client].has_key('ptable'):foremanptable=foremans[client]['ptable']
-  if foremans[client].has_key('v2') and "rue" in foremans[client]['v2']:foremanv2=True
   if not dns and foremans[client].has_key('dns'):dns=foremans[client]['dns']
  except:
   print ERR_NOFOREMANFILE
@@ -1169,7 +1166,7 @@ if not disksize:
 #VM CREATION IN FOREMAN
 #if foreman:foremancreate(foremanhost,name,dns,ip=ip1)
 if foreman:foremancreate(foremanhost,name,dns=dns,ip=ip1,osid=foremanos,envid=foremanenv,archid=foremanarch,puppetid=foremanpuppet,ptableid=foremanptable,hostgroup=hostgroup)
-if foreman and puppetclasses and v2:foremanaddpuppetclass(foremanhost,name,puppetclasses)
+if foreman and puppetclasses:foremanaddpuppetclass(foremanhost,name,puppetclasses)
 
 #VM CREATION IN OVIRT
 try:
