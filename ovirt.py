@@ -103,6 +103,8 @@ foremangroup = optparse.OptionGroup(parser, "Foreman options")
 foremangroup.add_option("-F", "--foreman", dest="foreman", action="store_true", help="Foreman support")
 foremangroup.add_option("--hostgroup", dest="hostgroup", type="string", help="Foreman hostgroup")
 #foremangroup.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
+foremangroup.add_option("--v2", dest="foremanv2", action="store_true", help="Activate Api V2 support. necessary to add class to a host upon creation")
+foremangroup.add_option("--puppetclasses", dest="puppetclasses", type="string", help="Puppet classes to add to host, separated by ,")
 parser.add_option_group(foremangroup)
 
 parser.add_option("-A", "--activate", dest="activate", type="string", help="Activate specified storageDomain")
@@ -204,7 +206,9 @@ guestwindows200364="windows_2003x64"
 guestwindows2008="windows_2008"
 guestwindows200864="windows_2008x64"
 foremanos,foremanenv,foremanarch,foremanpuppet,foremanptable=None,None,None,None,None
+foremanv2=options.foremanv2
 hostgroup=options.hostgroup
+puppetclasses=options.puppetclasses
 
 def findhostbyid(api,id):
  hosts=api.hosts
@@ -270,7 +274,10 @@ def foremando(url,actiontype=None,postdata=None):
  c = pycurl.Curl()
  b = StringIO.StringIO()
  c.setopt(pycurl.URL, url)
- c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json"])
+ if foremanv2:
+  c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json","Accept: version=2"])
+ else:
+  c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json"])
  c.setopt(pycurl.HTTPAUTH, pycurl.HTTPAUTH_BASIC)
  #c.setopt(pycurl.USERPWD, password)
  c.setopt(pycurl.SSL_VERIFYPEER, False)
@@ -303,7 +310,11 @@ def foremangetid(foreman,searchtype,searchname):
  else:
   url="http://%s/api/%s/%s" % (foreman,searchtype,searchname)
   result=foremando(url)
-  return str(result[searchtype[:-1]]["id"])
+ if searchtype.endswith("es"):
+  shortname=searchtype[:-2]
+ else:
+  shortname=searchtype[:-1]
+ return str(result[shortname]["id"])
 
 def foremancreate(foremanhost,name,dns=None,osid=None,envid=None,archid=None,puppetid=None,ptableid=None,powerup=None,ip=None,mac=None,memory=None,core=None,computeid=None,hostgroup=None):
  url="http://%s/hosts" % (foremanhost)
@@ -345,6 +356,15 @@ def foremandelete(foremanhost,name,dns=None):
   print "VM %s deleted in Foreman" % name
  else:
   print "Nothing to do in foreman"
+
+#should be a reflection of
+#curl -X PUT -H 'Accept: version=2' -H "Content-Type:application/json" -H "Accept:application/json"  http://192.168.8.8/api/hosts/2/puppetclasses/2
+def foremanaddpuppetclass(foremanhostname,puppetclasses):
+ puppetclasses=puppetclasses.split(",")
+ for puppetclass in puppetclasses:
+  puppetclassid=foremangetid(foreman,"puppetclasses",puppetclass)
+  url="http://%s/api/hosts/%s/puppetclasses/%s" % (foremanhost,name,puppetclassid)
+  foremando(url,actiontype="PUT")
 
 ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
 #thin provisioning
@@ -505,6 +525,7 @@ if foreman and client:
   if foremans[client].has_key('arch'):foremanarch=foremans[client]['arch']
   if foremans[client].has_key('puppet'):foremanpuppet=foremans[client]['puppet']
   if foremans[client].has_key('ptable'):foremanptable=foremans[client]['ptable']
+  if foremans[client].has_key('v2') and "rue" in foremans[client]['v2']:foremanv2=True
   if not dns and foremans[client].has_key('dns'):dns=foremans[client]['dns']
  except:
   print ERR_NOFOREMANFILE
@@ -1103,6 +1124,7 @@ if not initrd and profiles[profile].has_key("initrd"):initrd=profiles[profile]["
 if not cmdline and profiles[profile].has_key("cmdline"):cmdline=profiles[profile]["cmdline"]
 if not runonce and profiles[profile].has_key("runonce"):runonce=True
 if not hostgroup and profiles[profile].has_key("hostgroup"):hostgroup=profiles[profile]["hostgroup"]
+if not puppetclasses and profiles[profile].has_key("puppetclasses"):puppetclasses=profiles[profile]["puppetclasses"]
 
 if extra:cmdline="%s %s" %(cmdline,extra)
 #grab nets 
@@ -1147,6 +1169,7 @@ if not disksize:
 #VM CREATION IN FOREMAN
 #if foreman:foremancreate(foremanhost,name,dns,ip=ip1)
 if foreman:foremancreate(foremanhost,name,dns=dns,ip=ip1,osid=foremanos,envid=foremanenv,archid=foremanarch,puppetid=foremanpuppet,ptableid=foremanptable,hostgroup=hostgroup)
+if foreman and puppetclasses and v2:foremanaddpuppetclass(foremanhost,name,puppetclasses)
 
 #VM CREATION IN OVIRT
 try:
