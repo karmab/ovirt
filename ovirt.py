@@ -273,7 +273,7 @@ def foremando(url,actiontype=None,postdata=None,v2=False):
  b = StringIO.StringIO()
  c.setopt(pycurl.URL, url)
  if v2:
-  c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json","Accept: version=2"])
+  c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json,version=2"])
  else:
   c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json"])
  c.setopt(pycurl.HTTPAUTH, pycurl.HTTPAUTH_BASIC)
@@ -356,7 +356,7 @@ def foremandelete(foremanhost,name,dns=None):
   print "Nothing to do in foreman"
 
 #should be a reflection of
-#curl -X PUT -H 'Accept: version=2' -H "Content-Type:application/json" -H "Accept:application/json"  http://192.168.8.8/api/hosts/2/puppetclasses/2
+#curl -X PUT -H "Content-Type:application/json" -H "Accept:application/json,version=2"  http://192.168.8.8/api/hosts/2/puppetclasses/2
 def foremanaddpuppetclass(foremanhostname,puppetclasses):
  puppetclasses=puppetclasses.split(",")
  for puppetclass in puppetclasses:
