@@ -1010,11 +1010,13 @@ if len(args) == 1 and not new:
  for disk in vm.disks.list():
    size=disk.size/1024/1024/1024
    diskid=disk.get_id()
-   for stor in api.disks.get(id=diskid).get_storage_domains().get_storage_domain():
-    storid=stor.get_id()
-    storname=api.storagedomains.get(id=storid).name
-   print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s active: %s storagedomain: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state(),disk.get_active(),storname)
-   
+   try:  
+    for stor in api.disks.get(id=diskid).get_storage_domains().get_storage_domain():
+     storid=stor.get_id()
+     storname=api.storagedomains.get(id=storid).name
+    print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s active: %s storagedomain: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state(),disk.get_active(),storname)
+   except:
+    print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s active: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state(),disk.get_active())
  for nic in vm.nics.list():
   net=api.networks.get(id=nic.network.id).get_name()
   print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,net,nic.interface)
