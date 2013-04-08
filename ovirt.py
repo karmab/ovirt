@@ -269,14 +269,17 @@ def checkiso(api,iso=None):
  sys.exit(0)
 
 def foremando(url,actiontype=None,postdata=None,v2=False):
+ if postdata:postdata="%s" % str(postdata).replace("'",'"')
  c = pycurl.Curl()
  b = StringIO.StringIO()
  c.setopt(pycurl.URL, url)
- if v2:
-  c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json,version=2"])
- else:
-  c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json"])
+# if v2:
+#  c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json,version=2"])
+# else:
+#  c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json"])
+ c.setopt(pycurl.HTTPHEADER, [ "Content-type: application/json","Accept: application/json,version=2"])
  c.setopt(pycurl.HTTPAUTH, pycurl.HTTPAUTH_BASIC)
+ #c.setopt(pycurl.USERPWD, user)
  #c.setopt(pycurl.USERPWD, password)
  c.setopt(pycurl.SSL_VERIFYPEER, False)
  c.setopt(pycurl.SSL_VERIFYHOST, False)
@@ -300,13 +303,13 @@ def foremando(url,actiontype=None,postdata=None,v2=False):
  except:
   return None
 
-def foremangetid(foreman,searchtype,searchname):
+def foremangetid(host,searchtype,searchname):
  if searchtype=="puppet":
-  url="http://%s/api/smart_proxies?type=%s"  % (foreman,searchtype)
+  url="http://%s/api/smart_proxies?type=%s"  % (host,searchtype)
   result=foremando(url)
   return result[0]["smart_proxy"]["id"]
  else:
-  url="http://%s/api/%s/%s" % (foreman,searchtype,searchname)
+  url="http://%s/api/%s/%s" % (host,searchtype,searchname)
   result=foremando(url)
  if searchtype.endswith("es"):
   shortname=searchtype[:-2]
@@ -314,18 +317,21 @@ def foremangetid(foreman,searchtype,searchname):
   shortname=searchtype[:-1]
  return str(result[shortname]["id"])
 
-def foremancreate(foremanhost,name,dns=None,osid=None,envid=None,archid=None,puppetid=None,ptableid=None,powerup=None,ip=None,mac=None,memory=None,core=None,computeid=None,hostgroup=None):
- url="http://%s/hosts" % (foremanhost)
+def foremancreate(host=None,name=None,dns=None,osid=None,envid=None,archid=None,puppetid=None,ptableid=None,powerup=None,ip=None,mac=None,memory=None,core=None,computeid=None,hostgroup=None):
+ url="http://%s/hosts" % (host)
  if dns:name="%s.%s" % (name,dns)
- if not osid or not envid or not archid or not puppetid:
-  print "Missing Elements for vm s creation at foreman level.please check documentation"
-  return
- osid=foremangetid(foremanhost,"operatingsystems",osid)
- envid=foremangetid(foremanhost,"environments",envid)
- archid=foremangetid(foremanhost,"architectures",archid)
- puppetid=foremangetid(foremanhost,"puppet",puppetid)
+ if osid:osid=foremangetid(host,"operatingsystems",osid)
+ if not envid:envid="production"
+ if envid:envid=foremangetid(host,"environments",envid)
+ if archid:archid=foremangetid(host,"architectures",archid)
+ if puppetid:puppetid=foremangetid(host,"puppet",puppetid)
  postdata={}
- postdata["host"]={"name":name, "operatingsystem_id":osid,"environment_id":envid, "architecture_id":archid, "puppet_proxy_id":puppetid}
+ postdata["host"]={"name":name}
+ if osid:postdata["host"]["operatigsystem_id"]=ip
+ if envid:postdata["host"]["environment_id"]=envid
+ if archid:postdata["host"]["architecture_id"]=envid
+ if puppetid:postdata["host"]["puppet_proxy_id"]=puppetid
+ if ptableid:postdata["host"]["ptable_id"]=ptableid
  if ip:postdata["host"]["ip"]=ip
  if mac:postdata["host"]["mac"]=mac
  if computeid:
@@ -338,7 +344,6 @@ def foremancreate(foremanhost,name,dns=None,osid=None,envid=None,archid=None,pup
   ptableid=foremangetid(foremanhost,"ptables",ptableid)
   postdata["host"]["ptable_id"]=hostgroupid
  postdata="%s" % str(postdata).replace("'",'"')
- #print postdata
  result=foremando(url,actiontype="POST",postdata=postdata)
  if not result.has_key('errors'):
   print "VM %s created in Foreman" % name
@@ -346,9 +351,9 @@ def foremancreate(foremanhost,name,dns=None,osid=None,envid=None,archid=None,pup
   print "VM %s not created in Foreman because %s" % (name,result["errors"][0])
  
 
-def foremandelete(foremanhost,name,dns=None):
+def foremandelete(host,name,dns=None):
  if dns:name="%s.%s" % (name,dns)
- url="http://%s/hosts/%s" % (foremanhost,name) 
+ url="http://%s/hosts/%s" % (host,name) 
  result=foremando(url,actiontype="DELETE")
  if result:
   print "VM %s deleted in Foreman" % name
@@ -357,22 +362,23 @@ def foremandelete(foremanhost,name,dns=None):
 
 #should be a reflection of
 #curl -X POST -d "{\"puppetclass_id\":2}" -H "Content-Type:application/json" -H "Accept:application/json,version=2" http://192.168.8.8/api/hosts/10/puppetclass_ids
-def foremanaddpuppetclass(foremanhostname,puppetclasses):
+def foremanaddpuppetclass(host,name,puppetclasses):
  puppetclasses=puppetclasses.split(",")
  for puppetclass in puppetclasses:
-  puppetclassid=foremangetid(foreman,"puppetclasses",puppetclass)
-  url="http://%s/api/hosts/%s/puppetclass_ids" % (foreman,name)
+  puppetclassid=foremangetid(host,"puppetclasses",puppetclass) 
+  #nameid=foremangetid(host,"hosts",name)
+  url="http://%s/api/hosts/%s/puppetclass_ids" % (host,name)
   postdata={"puppetclass_id": puppetclassid}
   foremando(url,actiontype="POST",postdata=postdata,v2=True)
 
 
-def foremanaddparamater(foremanhostname,puppetparameters):
- puppetparameters=puppetparamaters.split(",")
+def foremanaddparameter(host,name,puppetparameters):
+ puppetparameters=puppetparameters.split(",")
  for puppetparameter in puppetparameters:
   parameter,value=puppetparameter.split("=")
   parameterid=foremangetid(foreman,"parameters",parameter)
-  url="http://%s/api/hosts/%s/parameter_ids" % (foreman,name)
-  postdata={"parameter_id": paramaterid}
+  url="http://%s/api/hosts/%s/parameter_ids" % (host,name)
+  postdata={"parameter_id": parameterid}
   foremando(url,actiontype="POST",postdata=postdata,v2=True)
 
 ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
@@ -526,8 +532,8 @@ if foreman and client:
     else:
      foremans[cli][option]=c.get(cli,option)
   foremanhost=foremans[client]['host']
-  #foremanuser=foreman[client]['user']
-  #foremanpassword=foreman[client]['password']
+  if foremans[client].has_key('user'):foremanuser=foreman[client]['user']
+  if foremans[client].has_key('password'):foremanpassword=foreman[client]['password']
   if foremans[client].has_key('mac'):foremanmac=foremans[client]['mac']
   if foremans[client].has_key('os'):foremanos=foremans[client]['os']
   if foremans[client].has_key('env'):foremanenv=foremans[client]['env']
@@ -535,8 +541,8 @@ if foreman and client:
   if foremans[client].has_key('puppet'):foremanpuppet=foremans[client]['puppet']
   if foremans[client].has_key('ptable'):foremanptable=foremans[client]['ptable']
   if not dns and foremans[client].has_key('dns'):dns=foremans[client]['dns']
- except:
-  print ERR_NOFOREMANFILE
+ except KeyError,e:
+  print "Problem parsing foreman ini file:Missing parameter %s" % e
   print "Client:%s" % client
   os._exit(1)
 
@@ -1172,11 +1178,11 @@ if not disksize:
  print "Missing disksize...Check documentation"
  os._exit(1)
  
-
 #VM CREATION IN FOREMAN
-#if foreman:foremancreate(foremanhost,name,dns,ip=ip1)
-if foreman:foremancreate(foremanhost,name,dns=dns,ip=ip1,osid=foremanos,envid=foremanenv,archid=foremanarch,puppetid=foremanpuppet,ptableid=foremanptable,hostgroup=hostgroup)
-if foreman and puppetclasses:foremanaddpuppetclass(foremanhost,name,puppetclasses)
+#if foreman:foremancreate(host=foremanhost,name=name,dns=dns,ip=ip1,osid=foremanos,envid=foremanenv,archid=foremanarch,puppetid=foremanpuppet,ptableid=foremanptable,hostgroup=hostgroup)
+if foreman and puppetclasses:foremanaddpuppetclass(host=foremanhost,name=name,puppetclasses=puppetclasses)
+sys.exit(0)
+
 
 #VM CREATION IN OVIRT
 try:
