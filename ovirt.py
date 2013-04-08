@@ -356,13 +356,24 @@ def foremandelete(foremanhost,name,dns=None):
   print "Nothing to do in foreman"
 
 #should be a reflection of
-#curl -X PUT -H "Content-Type:application/json" -H "Accept:application/json,version=2"  http://192.168.8.8/api/hosts/2/puppetclasses/2
+#curl -X POST -d "{\"puppetclass_id\":2}" -H "Content-Type:application/json" -H "Accept:application/json,version=2" http://192.168.8.8/api/hosts/10/puppetclass_ids
 def foremanaddpuppetclass(foremanhostname,puppetclasses):
  puppetclasses=puppetclasses.split(",")
  for puppetclass in puppetclasses:
   puppetclassid=foremangetid(foreman,"puppetclasses",puppetclass)
-  url="http://%s/api/hosts/%s/puppetclasses/%s" % (foremanhost,name,puppetclassid)
-  foremando(url=url,actiontype="PUT",v2=True)
+  url="http://%s/api/hosts/%s/puppetclass_ids" % (foreman,name)
+  postdata={"puppetclass_id": puppetclassid}
+  foremando(url,actiontype="POST",postdata=postdata,v2=True)
+
+
+def foremanaddparamater(foremanhostname,puppetparameters):
+ puppetparameters=puppetparamaters.split(",")
+ for puppetparameter in puppetparameters:
+  parameter,value=puppetparameter.split("=")
+  parameterid=foremangetid(foreman,"parameters",parameter)
+  url="http://%s/api/hosts/%s/parameter_ids" % (foreman,name)
+  postdata={"parameter_id": paramaterid}
+  foremando(url,actiontype="POST",postdata=postdata,v2=True)
 
 ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
 #thin provisioning
@@ -403,7 +414,7 @@ if listclients:
  print "Available Clients:"
  for cli in  sorted(ovirts):
   print cli
- print "Current default client is: %s" % (default["client"])
+ if default.has_key("client"):print "Current default client is: %s" % (default["client"])
  sys.exit(0)
 
 if switchclient:
