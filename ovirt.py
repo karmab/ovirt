@@ -1179,9 +1179,8 @@ if not disksize:
  os._exit(1)
  
 #VM CREATION IN FOREMAN
-#if foreman:foremancreate(host=foremanhost,name=name,dns=dns,ip=ip1,osid=foremanos,envid=foremanenv,archid=foremanarch,puppetid=foremanpuppet,ptableid=foremanptable,hostgroup=hostgroup)
+if foreman:foremancreate(host=foremanhost,name=name,dns=dns,ip=ip1,osid=foremanos,envid=foremanenv,archid=foremanarch,puppetid=foremanpuppet,ptableid=foremanptable,hostgroup=hostgroup)
 if foreman and puppetclasses:foremanaddpuppetclass(host=foremanhost,name=name,puppetclasses=puppetclasses)
-sys.exit(0)
 
 
 #VM CREATION IN OVIRT
