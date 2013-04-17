@@ -1184,75 +1184,101 @@ if foreman and puppetclasses:foremanaddpuppetclass(host=foremanhost,name=name,pu
 
 
 #VM CREATION IN OVIRT
-try:
- #TODO check that clu and storagedomain exist and that there is space there
- if memory2:memory=memory2
- if disksize2:disksize=disksize2
- if not memory or not disksize:
-  print "Missing memory or disk info for VM %s. Wont be created" % name
-  os._exit(1)
- if diskformat=="raw":sparse=False
- vm=api.vms.get(name=name)
- if vm:
-  print "VM %s allready existing.Leaving..." % name
-  os._exit(1)
- clu=api.clusters.get(name=clu)
- storagedomain=api.storagedomains.get(name=storagedomain)
- try:
-  disk1=params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),name="%s_Disk1" % (name),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True)
-  disk1=api.disks.add(disk1)
-  disk1id=disk1.get_id()
- except:
-  print "Insufficient space in storage domain.Leaving..."
-  os._exit(1)
- #boot order
- boot=[params.Boot(dev=boot1),params.Boot(dev=boot2)]
- #vm creation
- #if runonce specified,dont put kernelopts in VM definition, but rather at launch time
- if runonce:
-  kernel2,initrd2,cmdline2=kernel,initrd,cmdline 
-  kernel,initrd,cmdline=None,None,None
- api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu)),type_="server"))
- #add nics
- api.vms.get(name).nics.add(params.NIC(name='eth0', network=params.Network(name=net1), interface=netinterface))
- if mac1:
-  for nic in api.vms.get(name).nics.list():
-   if not ":" in mac1:mac1="%s%s" % (nic.mac.address[:-2],mac1)
-   nic.mac.address=mac1
-   nic.update()
-   break
- if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='eth1', network=params.Network(name=net2), interface=netinterface))
- if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='eth2', network=params.Network(name=net3), interface=netinterface))
- if numinterfaces>=4:api.vms.get(name).nics.add(params.NIC(name='eth3', network=params.Network(name=net4), interface=netinterface))
- if iso:
-  iso=checkiso(api,iso)
-  cdrom=params.CdRom(file=iso)
-  api.vms.get(name).cdroms.add(cdrom)
- if tags:
-  tags=tags.split(",")
-  for tag in tags: 
-   for tg  in api.tags.list():
-    if tg.get_name()==tag:
-     tagfound=True
-     api.vms.get(name).tags.add(tg)
- api.vms.get(name).update()
- while api.disks.get(id=disk1id).get_status().get_state() != "ok":
-  print "Waiting for disk creation to complete..."
-  time.sleep(5)
- api.vms.get(name).disks.add(disk1)
- while not api.vms.get(name).disks.get(id=disk1id):
-  print "Waiting for disk to be added to VM..."
-  time.sleep(2)
- api.vms.get(name).disks.get(id=disk1id).activate()
- print "VM %s created in ovirt" % name
- if cobbler:
-  #retrieve MACS for cobbler
-  vm=api.vms.get(name=name)
-  for nic in vm.nics.list():
-   macaddr.append(nic.mac.address)
-except:
- print "Failure creating VM in ovirt"
+#try:
+#TODO check that clu and storagedomain exist and that there is space there
+if memory2:memory=memory2
+if disksize2:disksize=disksize2
+if not memory or not disksize:
+ print "Missing memory or disk info for VM %s. Wont be created" % name
  os._exit(1)
+if diskformat=="raw":sparse=False
+vm=api.vms.get(name=name)
+if vm:
+ print "VM %s allready existing.Leaving..." % name
+ os._exit(1)
+clu=api.clusters.get(name=clu)
+storagedomain=api.storagedomains.get(name=storagedomain)
+try:
+ disk1=params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]),name="%s_Disk1" % (name),size=disksize,type_='system',status=None,interface=diskinterface,format=diskformat,sparse=sparse,bootable=True)
+ disk1=api.disks.add(disk1)
+ disk1id=disk1.get_id()
+except:
+ print "Insufficient space in storage domain.Leaving..."
+ os._exit(1)
+#boot order
+boot=[params.Boot(dev=boot1),params.Boot(dev=boot2)]
+#vm creation
+#if runonce specified,dont put kernelopts in VM definition, but rather at launch time
+if runonce:
+ kernel2,initrd2,cmdline2=kernel,initrd,cmdline 
+ kernel,initrd,cmdline=None,None,None
+api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'),os=params.OperatingSystem(type_=guestid,boot=boot,kernel=kernel,initrd=initrd,cmdline=cmdline),cpu=params.CPU(topology=params.CpuTopology(cores=numcpu)),type_="server"))
+#add nics
+api.vms.get(name).nics.add(params.NIC(name='eth0', network=params.Network(name=net1), interface=netinterface))
+if mac1:
+ nic=api.vms.get(name).nics.get(name="eth0")
+ if not ":" in mac1:mac1="%s%s" % (nic.mac.address[:-2],mac1)
+ nic.mac.address=mac1
+ nic.update()
+
+if numinterfaces>=2:api.vms.get(name).nics.add(params.NIC(name='eth1', network=params.Network(name=net2), interface=netinterface))
+#compare eth0 and eth1 to get sure eth0 has a lower mac
+eth0ok=True
+maceth0=api.vms.get(name).nics.get(name="eth0").mac.address
+maceth1=api.vms.get(name).nics.get(name="eth1").mac.address
+eth0=maceth0.split(":")
+eth1=maceth1.split(":")
+for i in range(len(eth0)):
+ el0 = int(eth0[i], 16)
+ el1 = int(eth1[i], 16)
+ if el0 == el1: 
+  pass
+ elif el0 > el1:
+  eth0ok=False
+
+if not eth0ok:
+ tempnic="11:11:11:11:11:11"   
+ nic=api.vms.get(name).nics.get(name="eth0")
+ nic.mac.address=tempnic
+ nic.update()
+ nic=api.vms.get(name).nics.get(name="eth1")
+ nic.mac.address=maceth0
+ nic.update()
+ nic=api.vms.get(name).nics.get(name="eth0")
+ nic.mac.address=maceth1
+ nic.update()
+     
+if numinterfaces>=3:api.vms.get(name).nics.add(params.NIC(name='eth2', network=params.Network(name=net3), interface=netinterface))
+if numinterfaces>=4:api.vms.get(name).nics.add(params.NIC(name='eth3', network=params.Network(name=net4), interface=netinterface))
+if iso:
+ iso=checkiso(api,iso)
+ cdrom=params.CdRom(file=iso)
+ api.vms.get(name).cdroms.add(cdrom)
+if tags:
+ tags=tags.split(",")
+ for tag in tags: 
+  for tg  in api.tags.list():
+   if tg.get_name()==tag:
+    tagfound=True
+    api.vms.get(name).tags.add(tg)
+api.vms.get(name).update()
+while api.disks.get(id=disk1id).get_status().get_state() != "ok":
+ print "Waiting for disk creation to complete..."
+ time.sleep(5)
+api.vms.get(name).disks.add(disk1)
+while not api.vms.get(name).disks.get(id=disk1id):
+ print "Waiting for disk to be added to VM..."
+ time.sleep(2)
+api.vms.get(name).disks.get(id=disk1id).activate()
+print "VM %s created in ovirt" % name
+if cobbler:
+ #retrieve MACS for cobbler
+ vm=api.vms.get(name=name)
+ for nic in vm.nics.list():
+  macaddr.append(nic.mac.address)
+#except:
+# print "Failure creating VM in ovirt"
+# os._exit(1)
 
 #VM CREATION IN COBBLER
 #grab ips and extra routes for cobbler
