@@ -738,7 +738,7 @@ if len(args) == 1 and not new:
  name=args[0]
  vm=api.vms.get(name=name)
  if kill and foreman:foremandelete(foremanhost,name,dns)
- if kill and cobbler and not vm:
+ if kill and cobbler:
   s = xmlrpclib.Server("http://%s/cobbler_api" % cobblerhost)
   token = s.login(cobbleruser,cobblerpassword)
   system=s.find_system({"name":name})
@@ -789,17 +789,6 @@ if len(args) == 1 and not new:
    print "VM %s started in runonce mode" % name
   sys.exit(0)
  if kill:
-  if foreman:foremandelete(foremanhost,name)
-  if cobbler:
-   s = xmlrpclib.Server("http://%s/cobbler_api" % cobblerhost)
-   token = s.login(cobbleruser,cobblerpassword)
-   system=s.find_system({"name":name})
-   if system==[]:
-    print "Nothing to do in cobbler"
-   else:
-    s.remove_system(name,token)
-    s.sync(token)
-    print "%s sucessfully killed in %s" % (name,cobblerhost)
   if not forcekill:
    sure=raw_input("Confirm you want to destroy VM %s:(y/N)" % name)
    if sure!="Y":
