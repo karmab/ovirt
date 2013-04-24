@@ -737,7 +737,7 @@ if template:
 if len(args) == 1 and not new:
  name=args[0]
  vm=api.vms.get(name=name)
- if kill and foreman and not vm:foremandelete(foremanhost,name,dns)
+ if kill and foreman:foremandelete(foremanhost,name,dns)
  if kill and cobbler and not vm:
   s = xmlrpclib.Server("http://%s/cobbler_api" % cobblerhost)
   token = s.login(cobbleruser,cobblerpassword)
