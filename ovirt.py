@@ -1302,31 +1302,31 @@ if mac1:
 
 if numinterfaces>=2:
     api.vms.get(name).nics.add(params.NIC(name='eth1', network=params.Network(name=net2), interface=netinterface))
-#compare eth0 and eth1 to get sure eth0 has a lower mac
-eth0ok = True
-maceth0 = api.vms.get(name).nics.get(name="eth0").mac.address
-maceth1 = api.vms.get(name).nics.get(name="eth1").mac.address
-eth0 = maceth0.split(":")
-eth1 = maceth1.split(":")
-for i in range(len(eth0)):
- el0 = int(eth0[i], 16)
- el1 = int(eth1[i], 16)
- if el0 == el1: 
-  pass
- elif el0 > el1:
-  eth0ok=False
+    #compare eth0 and eth1 to get sure eth0 has a lower mac
+    eth0ok = True
+    maceth0 = api.vms.get(name).nics.get(name="eth0").mac.address
+    maceth1 = api.vms.get(name).nics.get(name="eth1").mac.address
+    eth0 = maceth0.split(":")
+    eth1 = maceth1.split(":")
+    for i in range(len(eth0)):
+        el0 = int(eth0[i], 16)
+        el1 = int(eth1[i], 16)
+        if el0 == el1: 
+            pass
+        elif el0 > el1:
+            eth0ok=False
 
-if not eth0ok:
- tempnic = "11:11:11:11:11:11"   
- nic = api.vms.get(name).nics.get(name="eth0")
- nic.mac.address = tempnic
- nic.update()
- nic = api.vms.get(name).nics.get(name="eth1")
- nic.mac.address = maceth0
- nic.update()
- nic = api.vms.get(name).nics.get(name="eth0")
- nic.mac.address = maceth1
- nic.update()
+    if not eth0ok:
+        tempnic = "11:11:11:11:11:11"   
+        nic = api.vms.get(name).nics.get(name="eth0")
+        nic.mac.address = tempnic
+        nic.update()
+        nic = api.vms.get(name).nics.get(name="eth1")
+        nic.mac.address = maceth0
+        nic.update()
+        nic = api.vms.get(name).nics.get(name="eth0")
+        nic.mac.address = maceth1
+        nic.update()
      
 if numinterfaces>=3:
     api.vms.get(name).nics.add(params.NIC(name='eth2', network=params.Network(name=net3), interface=netinterface))
