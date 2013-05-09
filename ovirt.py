@@ -1293,12 +1293,6 @@ if runonce:
 api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'), os=params.OperatingSystem(type_=guestid, boot=boot, kernel=kernel, initrd=initrd, cmdline=cmdline), cpu=params.CPU(topology=params.CpuTopology(cores=numcpu)), type_="server"))
 #add nics
 api.vms.get(name).nics.add(params.NIC(name='eth0', network=params.Network(name=net1), interface=netinterface))
-if mac1:
- nic = api.vms.get(name).nics.get(name="eth0")
- if not ":" in mac1:
-     mac1 = "%s%s" % (nic.mac.address[:-2], mac1)
- nic.mac.address = mac1
- nic.update()
 
 if numinterfaces>=2:
     api.vms.get(name).nics.add(params.NIC(name='eth1', network=params.Network(name=net2), interface=netinterface))
@@ -1328,6 +1322,13 @@ if numinterfaces>=2:
         nic.mac.address = maceth1
         nic.update()
      
+if mac1:
+ nic = api.vms.get(name).nics.get(name="eth0")
+ if not ":" in mac1:
+     mac1 = "%s%s" % (nic.mac.address[:-2], mac1)
+ nic.mac.address = mac1
+ nic.update()
+
 if numinterfaces>=3:
     api.vms.get(name).nics.add(params.NIC(name='eth2', network=params.Network(name=net3), interface=netinterface))
 if numinterfaces>=4:
