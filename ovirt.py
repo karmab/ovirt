@@ -50,6 +50,7 @@ creationgroup.add_option("-N", "--numinterfaces", dest="numinterfaces", type="in
 creationgroup.add_option("-T", "--thin", dest="thin", action="store_true", help="Use thin provisioning for disk")
 creationgroup.add_option("-Y", "--nolaunch", dest="nolaunch", action="store_true", help="Dont Launch VM,just create it")
 creationgroup.add_option("-8", "--mac1", dest="mac1", type="string", help="Specify mac to assign to first interface of vm when creating it or deploying from template.if a number is provided,only last octet of the mac will be set")
+creationgroup.add_option("--mac2", dest="mac2", type="string", help="Specify mac to assign to second interface of vm when creating it or deploying from template.")
 parser.add_option_group(creationgroup)
 
 actiongroup = optparse.OptionGroup(parser, "Action options")
@@ -186,6 +187,7 @@ isoquit = options.isoquit
 migrate = options.migrate
 template = options.template
 mac1 = options.mac1
+mac2 = options.mac2
 #hanging = options.hanging
 macaddr = []
 low=None
@@ -1328,6 +1330,15 @@ if mac1:
      mac1 = "%s%s" % (nic.mac.address[:-2], mac1)
  nic.mac.address = mac1
  nic.update()
+
+
+if mac2:
+ nic = api.vms.get(name).nics.get(name="eth1")
+ if not ":" in mac2:
+     mac2 = "%s%s" % (nic.mac.address[:-2], mac2)
+ nic.mac.address = mac2
+ nic.update()
+
 
 if numinterfaces>=3:
     api.vms.get(name).nics.add(params.NIC(name='eth2', network=params.Network(name=net3), interface=netinterface))
