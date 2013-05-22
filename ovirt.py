@@ -732,6 +732,7 @@ if summary:
     else:
      print "Network: %s " % net.name
    for h in hosts: 
+    print dir(h)   
     cluh = api.clusters.get(id=h.get_cluster().get_id()).get_name()
     if cluh == clu.name:
         print "Host: %s Cpu: %s" % (h.name, h.cpu.name)
@@ -1487,6 +1488,12 @@ if cobbler:
   s.modify_system(system, 'modify_interface', eth1, token)
   s.modify_system(system, 'modify_interface', eth2, token)
   s.modify_system(system, 'modify_interface', eth3, token)
+
+ #if ksopts:
+ #   s.modify_system(system_id,"kernel_options", ksopts, token)
+ if cmdline:  
+    s.modify_system(system_id,"ks_meta", cmdline, token)
+
  s.save_system(system, token)
  s.sync(token)
  print "VM %s created in cobbler" % name

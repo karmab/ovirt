@@ -169,7 +169,7 @@ if listing:
  for vm in sorted(vms):
   print "%s using %s" % (vm,vms[vm])
  if spm:
-  print "VMS reported by this host,as SPM:"
+  print "VMS reported by this host,as SPM:\n"
   if host=="127.0.0.1":
    for id in os.listdir(sppath):
     if id in vmids:continue
@@ -179,7 +179,6 @@ if listing:
      name=content.findall("Name")[0].text
      print "%s" % name   
   else:
-   print "VMS reported by this host,as SPM:"
    ssh=sshconnect(host)
    for id in sshlist(ssh,sppath).split("\n"):
     if id in vmids or id=="":continue
