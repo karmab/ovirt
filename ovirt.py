@@ -1492,7 +1492,7 @@ if cobbler:
  #if ksopts:
  #   s.modify_system(system_id,"kernel_options", ksopts, token)
  if cmdline:  
-    s.modify_system(system_id,"ks_meta", cmdline, token)
+    s.modify_system(system,"ks_meta", cmdline, token)
 
  s.save_system(system, token)
  s.sync(token)
