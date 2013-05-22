@@ -948,7 +948,7 @@ if len(args) == 1 and not new:
   vm.os.cmdline = cmdline
   vm.update()
   print "cmdline correctly changed for %s" % (name)
- if extra:
+ if cmdline and extra:
   vm.os.cmdline = "%s %s" % (vm.os.cmdline, extra)
   vm.update()
   print "extra cmdline correctly changed for %s" % (name)
