@@ -697,9 +697,9 @@ if summary:
    if s.get_status().get_state()=="active":
     used = s.get_used()/1024/1024/1024
     available = s.get_available()/1024/1024/1024
-    print "Storage: %s Type: %s Status: %s Total space: %sGb Available space:%sGb" % (s.name, s.get_type(), s.get_status().get_state(), used+available, available)
+    print "Storage: %s Id: %s Type: %s Status: %s Total space: %sGb Available space:%sGb" % (s.name, s.get_id(), s.get_type(), s.get_status().get_state(), used+available, available)
    else:
-    print "Storage: %s Type: %s Status: %s Total space: N/A Available space:N/A" % (s.name, s.get_type(), s.get_status().get_state())
+       print "Storage: %s Id: %s Type: %s Status: %s Total space: N/A Available space:N/A" % (s.name, s.get_id(), s.get_type(), s.get_status().get_state())
   for clu  in clusters:
    if not clu.get_data_center():
     if clu not in nodcs:nodcs.append(clu)
@@ -732,7 +732,6 @@ if summary:
     else:
      print "Network: %s " % net.name
    for h in hosts: 
-    print dir(h)   
     cluh = api.clusters.get(id=h.get_cluster().get_id()).get_name()
     if cluh == clu.name:
         print "Host: %s Cpu: %s" % (h.name, h.cpu.name)
