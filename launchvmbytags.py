@@ -45,83 +45,83 @@ ohost,oport,ouser,opassword,oca,oorg=None,None,None,None,None,None
 ovirtconffile=os.environ['HOME']+"/ovirt.ini"
 #parse ovirt client auth file
 if not os.path.exists(ovirtconffile):
- print "Missing %s in your  home directory.Check documentation" % ovirtconffile
- sys.exit(1)
+    print "Missing %s in your  home directory.Check documentation" % ovirtconffile
+    sys.exit(1)
 try:
- c = ConfigParser.ConfigParser()
- c.read(ovirtconffile)
- ovirts={}
- default={}
- for cli in c.sections():
-  for option in  c.options(cli):
-   if cli=="default":
-    default[option]=c.get(cli,option)
-    continue
-   if not ovirts.has_key(cli):
-    ovirts[cli]={option : c.get(cli,option)}
-   else:
-    ovirts[cli][option]=c.get(cli,option)
+    c = ConfigParser.ConfigParser()
+    c.read(ovirtconffile)
+    ovirts={}
+    default={}
+    for cli in c.sections():
+        for option in  c.options(cli):
+            if cli=="default":
+                default[option]=c.get(cli,option)
+                continue
+            if not ovirts.has_key(cli):
+                ovirts[cli]={option : c.get(cli,option)}
+            else:
+                ovirts[cli][option]=c.get(cli,option)
 except:
- print ERR_NOOVIRTFILE
- os._exit(1)
+    print ERR_NOOVIRTFILE
+    os._exit(1)
 
 if listclients:
- print "Available Clients:"
- for cli in  sorted(ovirts):
-  print cli
- print "Current default client is: %s" % (default["client"])
- sys.exit(0)
+    print "Available Clients:"
+    for cli in  sorted(ovirts):
+        print cli
+    print "Current default client is: %s" % (default["client"])
+    sys.exit(0)
 
 if not client:
- try:
-  client=default['client']
- except:
-  print "No client defined as default in your ini file or specified in command line"
-  os._exit(1)
+    try:
+        client=default['client']
+    except:
+        print "No client defined as default in your ini file or specified in command line"
+        os._exit(1)
 
 try:
- ohost=ovirts[client]["host"]
- oport=ovirts[client]["port"]
- ouser=ovirts[client]["user"]
- opassword=ovirts[client]["password"]
- if ovirts[client].has_key("ssl"):ossl=ovirts[client]["ssl"]
- if ovirts[client].has_key("clu"):clu=ovirts[client]["clu"]
- if ovirts[client].has_key("storagedomain"):storagedomain=ovirts[client]["storagedomain"]
- if ovirts[client].has_key("ssl"):ossl=True
- if ovirts[client].has_key("ca"):oca=ovirts[client]["ca"]
- if ovirts[client].has_key("org"):oorg=ovirts[client]["org"]
+    ohost=ovirts[client]["host"]
+    oport=ovirts[client]["port"]
+    ouser=ovirts[client]["user"]
+    opassword=ovirts[client]["password"]
+    if ovirts[client].has_key("ssl"):ossl=ovirts[client]["ssl"]
+    if ovirts[client].has_key("clu"):clu=ovirts[client]["clu"]
+    if ovirts[client].has_key("storagedomain"):storagedomain=ovirts[client]["storagedomain"]
+    if ovirts[client].has_key("ssl"):ossl=True
+    if ovirts[client].has_key("ca"):oca=ovirts[client]["ca"]
+    if ovirts[client].has_key("org"):oorg=ovirts[client]["org"]
 except KeyError,e:
- print "Problem parsing your ini file:Missing parameter %s" % e
- os._exit(1)
+    print "Problem parsing your ini file:Missing parameter %s" % e
+    os._exit(1)
 
 if not insecure:
- url = "https://%s:%s/api" % (ohost,oport)
+    url = "https://%s:%s/api" % (ohost,oport)
 else:
- url = "http://%s:%s/api" % (ohost,oport)
+    url = "http://%s:%s/api" % (ohost,oport)
 
 api = API(url=url, username=ouser, password=opassword, insecure=True)
 #searchs vms with matching tag
 vms=api.vms.list()
 launched=0
 for vm in vms:
- if vm.status.state=="up":
-  continue
- for tg in vm.get_tags().list():
-  if tg.name==tag:
-   #delete tag
-   tg.delete()
-   #remove kernel options
-   vm.os.kernel,vm.os.initrd,vm.os.cmdline="","",""
-   #ensure first boot is hd( and set second as cdrom
-   vm.os.boot = [ params.Boot(dev="hd"),params.Boot(dev="cdrom") ]
-   #launch vm
-   vm.start()
-   print "vm %s started" % vm.name
-   launched=launched+1
+    if vm.status.state=="up":
+        continue
+    for tg in vm.get_tags().list():
+        if tg.name==tag:
+            #delete tag
+            tg.delete()
+            #remove kernel options
+            vm.os.kernel,vm.os.initrd,vm.os.cmdline="","",""
+            #ensure first boot is hd( and set second as cdrom
+            vm.os.boot = [ params.Boot(dev="hd"),params.Boot(dev="cdrom") ]
+            #launch vm
+            vm.start()
+            print "vm %s started" % vm.name
+            launched=launched+1
 
 if launched==0:
- print "No matching vms found"
+    print "No matching vms found"
 else:
- print "%d vms were launched" % (launched)
+    print "%d vms were launched" % (launched)
 
 sys.exit(0)
