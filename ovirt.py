@@ -813,7 +813,7 @@ if len(args) == 1 and not new:
             s.sync(token)
             print "%s sucessfully killed in %s" % (name, cobblerhost)
     if not vm:
-        print "Vm %s not found in ovirt" % name
+        print "Vm %s not found in %s" % (name, client)
         sys.exit(1)
     if runonce and not new:
         if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
@@ -1083,12 +1083,15 @@ if len(args) == 1 and not new:
     memory = vm.memory/1024/1024
     print "Memory: %dMb" % memory
     for disk in vm.disks.list():
-        size = disk.size/1024/1024/1024
-        diskid = disk.get_id()
-        for stor in api.disks.get(id=diskid).get_storage_domains().get_storage_domain():
-            storid = stor.get_id()
-            storname = api.storagedomains.get(id=storid).name
+        try:
+            size = disk.size/1024/1024/1024
+            diskid = disk.get_id()
+            for stor in api.disks.get(id=diskid).get_storage_domains().get_storage_domain():
+                storid = stor.get_id()
+                storname = api.storagedomains.get(id=storid).name
             print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s active: %s storagedomain: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state(),disk.get_active(),storname)
+        except:
+            print "diskname: N/A"
     for nic in vm.nics.list():
         net = api.networks.get(id=nic.network.id).get_name()
         print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,net,nic.interface)
