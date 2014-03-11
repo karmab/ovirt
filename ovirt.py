@@ -15,6 +15,7 @@ import xmlrpclib
 import ConfigParser
 from ovirtsdk.api import API
 from ovirtsdk.xml import params
+
 import StringIO
 
 __author__ = "Karim Boumedhel"
@@ -379,11 +380,8 @@ def foremandelete(host, name, dns=None):
     if dns:
         name = "%s.%s" % (name, dns)
     url = "http://%s/hosts/%s" % (host, name)
-    result = foremando(url=url, actiontype="DELETE", user=foremanuser, password=foremanpassword)
-    if result:
-        print "VM %s deleted in Foreman" % name
-    else:
-        print "Nothing to do in foreman"
+    foremando(url=url, actiontype="DELETE", user=foremanuser, password=foremanpassword)
+    print "VM %s deleted in Foreman" % name
 
 #should be a reflection of
 #curl -X POST -d "{\"puppetclass_id\":2}" -H "Content-Type:application/json" -H "Accept:application/json,version=2" http://192.168.8.8/api/hosts/10/puppetclass_ids
@@ -1095,6 +1093,12 @@ if len(args) == 1 and not new:
     for nic in vm.nics.list():
         net = api.networks.get(id=nic.network.id).get_name()
         print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,net,nic.interface)
+    info = vm.get_guest_info()
+    if info !=None:
+        ips=''
+        for element in info.get_ips().get_ip():
+            ips = "%s %s" % (ips,element.get_address())
+        print "ips: %s" % (ips)
     for tag in vm.get_tags().list():
         print "Tags: %s" % tag.get_name()
     if vm.get_custom_properties():
