@@ -1052,34 +1052,34 @@ if len(args) == 1 and not new:
     if not vm:
         print "VM %s not found.Leaving..." % name
         sys.exit(1)
-    print "Name: %s" % vm.name
-    print "Started at: %s" % vm.start_time
-    print "Created at: %s" % vm.creation_time
-    print "Uid: %s" % vm.get_id()
-    print "Boot1: %s" % (vm.os.boot[0].get_dev())
+    print "name: %s" % vm.name
+    print "started at: %s" % vm.start_time
+    print "created at: %s" % vm.creation_time
+    print "uid: %s" % vm.get_id()
+    print "boot1: %s" % (vm.os.boot[0].get_dev())
     if len(vm.os.boot)==2:
-        print "Boot2: %s" % (vm.os.boot[1].get_dev())
+        print "boot2: %s" % (vm.os.boot[1].get_dev())
     for cdrom in vm.get_cdroms().list():
         if cdrom.get_file():print "Cdrom: %s" % cdrom.get_file().get_id()
     if vm.os.kernel or vm.os.initrd or vm.os.cmdline:
-        print "Kernel: %s Initrd:%s Cmdline:%s" % (vm.os.kernel,vm.os.initrd,vm.os.cmdline)
-    print "Status: %s" % vm.status.state
-    print "Os: %s" % vm.get_os().get_type()
+        print "kernel: %s Initrd:%s Cmdline:%s" % (vm.os.kernel,vm.os.initrd,vm.os.cmdline)
+    print "status: %s" % vm.status.state
+    print "os: %s" % vm.get_os().get_type()
     if vm.status.state=="up" or vm.status.state=="wait_for_launch" or vm.status.state=="powering_up":
         host = findhostbyid(api,vm.get_host().get_id())
-        print "Host: %s" % host
+        print "host: %s" % host
     preferredhost = vm.get_placement_policy().get_host()
     if preferredhost:
         hostid = preferredhost.get_id()
-        print "Preferred Host: %s" % api.hosts.get(id=hostid).get_name()
-    print "Cpu: %s sockets:%s" % (vm.cpu.topology.cores,vm.cpu.topology.sockets)
+        print "preferred Host: %s" % api.hosts.get(id=hostid).get_name()
+    print "cpu: %s sockets:%s" % (vm.cpu.topology.cores,vm.cpu.topology.sockets)
     if vm.status.state=="up":
         for info in vm.get_statistics().list():
             if info.get_description()=="CPU used by guest" or info.get_description()=="Memory used (agent)":
                 for i in info.get_values().get_value():value=i.get_datum()
-                print "%s: %s" % (info.get_description(),value)
+                print "%s: %s" % (info.get_description().lower(),value)
     memory = vm.memory/1024/1024
-    print "Memory: %dMb" % memory
+    print "memory: %dMb" % memory
     for disk in vm.disks.list():
         try:
             size = disk.size/1024/1024/1024
@@ -1095,15 +1095,15 @@ if len(args) == 1 and not new:
         print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,net,nic.interface)
     info = vm.get_guest_info()
     if info !=None:
-        ips=''
+        ips = ''
         for element in info.get_ips().get_ip():
-            ips = "%s %s" % (ips,element.get_address())
+            ips = "%s %s" % (ips, element.get_address())
         print "ips: %s" % (ips)
     for tag in vm.get_tags().list():
-        print "Tags: %s" % tag.get_name()
+        print "tags: %s" % tag.get_name()
     if vm.get_custom_properties():
         for custom in vm.get_custom_properties().get_custom_property():
-            print "Custom Property: %s Value: %s" % (custom.get_name(),custom.get_value())
+            print "custom Property: %s Value: %s" % (custom.get_name(),custom.get_value())
     if console:
         if vm.status.state=="down":
             print "Machine down"
