@@ -707,9 +707,9 @@ if summary:
             print "Cluster: %s" % (clu.name)
             for net in clu.networks.list():
                 if net.get_display():
-                    print "Network: %s  (Set as display network)" % net.name
+                    print "Network: %s  (Set as display network) Id: %s" % (net.name,net.id)
                 else:
-                    print "Network: %s " % net.name
+                    print "Network: %s Id: %s" % (net.name,net.id)
             for h in hosts:
                 spm = h.get_storage_manager().get_valueOf_()
                 if spm=="true":
