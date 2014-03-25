@@ -81,6 +81,8 @@ actiongroup.add_option('-6', '--import', dest='importvm', type='string', help='I
 actiongroup.add_option('-7', "--runonce", dest='runonce', action="store_true", help='Runonce VM.you will need to pass kernel,initrd and cmdline')
 actiongroup.add_option('-8', '--cloudinit', dest='cloudinit', action='store_true', help='Use Cloudinit when launching VM.you will need to pass ip1, dns and dns1 and profile. name will be derived from the vm s name, subnet from your profile')
 actiongroup.add_option('--dns1', dest='dns1', type='string', help='dns server to use along with Cloudinit')
+actiongroup.add_option('--filepath', dest='filepath', type='string', help='file path to create along with Cloudinit')
+actiongroup.add_option('--filecontent', dest='filecontent', type='string', help='file content to create along with Cloudinit')
 parser.add_option_group(actiongroup)
 
 listinggroup = optparse.OptionGroup(parser, 'Listing options')
@@ -154,6 +156,8 @@ ip3 = options.ip3
 ip4 = options.ip4
 dns = options.dns
 dns1 = options.dns1
+filepath = options.filepath
+filecontent = options.filecontent
 activate = options.activate
 maintenance = options.maintenance
 preferred = options.preferred
@@ -882,7 +886,13 @@ if len(args) == 1 and not new:
                         resolvhosts.add_host(resolvhost)
                         dns.set_servers(resolvhosts)
                     networkconfiguration.set_dns(dns)
-                cloudinit = params.CloudInit(host=hostname, network_configuration=networkconfiguration, regenerate_ssh_keys=True, users=users)
+                files = None
+                if filepath and filecontent:
+                    files = params.Files()
+                    cifile = params.File(name=filepath, content=filecontent, type_='PLAINTEXT')
+                    files = params.Files(file=[cifile])
+                    #files.set_file(cifile)
+                cloudinit = params.CloudInit(host=hostname, network_configuration=networkconfiguration, regenerate_ssh_keys=True, users=users, files=files)
                 initialization = params.Initialization(cloud_init=cloudinit)
                 action.vm = params.VM(initialization=initialization)
             elif iso:
