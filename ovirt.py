@@ -45,12 +45,12 @@ creationgroup.add_option("-f", "--diskformat", dest="diskformat", type="string",
 creationgroup.add_option("-m", "--memory", dest="memory2", metavar="MEMORY",type="int", help="Specify Memory, in Mo")
 creationgroup.add_option("-n", "--new", dest="new",action="store_true", help="Create new VM")
 creationgroup.add_option("-p", "--profile", dest="profile",type="string", help="specify Profile")
+creationgroup.add_option('-t', '--thin', dest="thin", action="store_true", help="Use thin provisioning for disk")
 creationgroup.add_option("-D", "--storagedomain" , dest="storagedomain", type="string", help="Specify Storage Domain")
 creationgroup.add_option("-G", "--cluster", dest="clu", metavar="CLUSTER",type="string", help="Specify Cluster")
 creationgroup.add_option("-N", "--numinterfaces", dest="numinterfaces", type="int", help="Specify number of net interfaces")
-creationgroup.add_option("-T", "--thin", dest="thin", action="store_true", help="Use thin provisioning for disk")
 creationgroup.add_option("-Y", "--nolaunch", dest="nolaunch", action="store_true", help="Dont Launch VM,just create it")
-creationgroup.add_option("-8", "--mac1", dest="mac1", type="string", help="Specify mac to assign to first interface of vm when creating it or deploying from template.if a number is provided,only last octet of the mac will be set")
+creationgroup.add_option('--mac1', dest="mac1", type="string", help="Specify mac to assign to first interface of vm when creating it or deploying from template.if a number is provided,only last octet of the mac will be set")
 creationgroup.add_option("--mac2", dest="mac2", type="string", help="Specify mac to assign to second interface of vm when creating it or deploying from template.")
 parser.add_option_group(creationgroup)
 
@@ -65,9 +65,9 @@ actiongroup.add_option("-P", "--preferred", dest="preferred", type="string", hel
 actiongroup.add_option("-q", "--quit", dest="isoquit", action="store_true", help="Remove iso from VM")
 actiongroup.add_option("-r", "--restart", dest="restart", action="store_true", help="Restart vm")
 actiongroup.add_option("-s", "--start", dest="start", action="store_true", help="Start VM")
-actiongroup.add_option("-t", "--tags", dest="tags", type="string", help="Add tags to VM")
+actiongroup.add_option("--tags", dest="tags", type="string", help="Add tags to VM")
 actiongroup.add_option("-u", "--deletetag", dest="deletetag", type="string", help="Delete tag from VM")
-actiongroup.add_option("-v", "--reset", dest="reset", action="store_true", help="Reset kernel parameters for given VM")
+actiongroup.add_option("--reset", dest="reset", action="store_true", help="Reset kernel parameters for given VM")
 actiongroup.add_option("-w", "--stop", dest="stop", action="store_true", help="Stop VM")
 actiongroup.add_option("-x", "--kernel", dest="kernel", type="string", help="Specify kernel to boot VM")
 actiongroup.add_option("-y", "--initrd", dest="initrd", type="string", help="Specify initrd to boot VM")
@@ -75,20 +75,23 @@ actiongroup.add_option("-z", "--cmdline", dest="cmdline", type="string", help="S
 actiongroup.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom.If you only provivde one options, second boot option will be set to None")
 #actiongroup.add_option("-Q", "--hanging", dest="hanging", action="store_true", help="Check hanging tasks")
 actiongroup.add_option("-K", "--kill", dest="kill", action="store_true" , help="specify VM to kill in virtual center.Confirmation will be asked unless -F/--forcekill flag is set.VM will also be killed in cobbler server if -Z/-cobbler flag set")
-actiongroup.add_option("-Q", "--forcekill", dest="forcekill", action="store_true", help="Dont ask confirmation when killing a VM")
-actiongroup.add_option("-5", "--template", dest="template", type="string", help="Deploy VM from template")
-actiongroup.add_option("-6", "--import", dest="importvm", type="string", help="Import specified VM")
-actiongroup.add_option("-7", "--runonce", dest="runonce", action="store_true", help="Runonce VM.you will need to pass kernel,initrd and cmdline")
+actiongroup.add_option('-Q', '--forcekill', dest='forcekill', action='store_true', help='Dont ask confirmation when killing a VM')
+actiongroup.add_option('-5', '--template', dest='template', type="string", help='Deploy VM from template')
+actiongroup.add_option('-6', '--import', dest='importvm', type='string', help='Import specified VM')
+actiongroup.add_option('-7', "--runonce", dest='runonce', action="store_true", help='Runonce VM.you will need to pass kernel,initrd and cmdline')
+actiongroup.add_option('-8', '--cloudinit', dest='cloudinit', action='store_true', help='Use Cloudinit when launching VM.you will need to pass ip1, dns and dns1 and profile. name will be derived from the vm s name, subnet from your profile')
+actiongroup.add_option('--dns1', dest='dns1', type='string', help='dns server to use along with Cloudinit')
 parser.add_option_group(actiongroup)
 
-listinggroup = optparse.OptionGroup(parser, "Listing options")
-listinggroup.add_option("-l", "--listprofiles", dest="listprofiles", action="store_true", help="list available profiles")
-listinggroup.add_option("-E", "--listexports", dest="listexports", action="store_true", help="List machines in export domain")
-listinggroup.add_option("-H", "--listhosts", dest="listhosts", action="store_true", help="List hosts")
-listinggroup.add_option("-I", "--listisos", dest="listisos", action="store_true", help="List isos")
-listinggroup.add_option("-L", "--listclients", dest="listclients", action="store_true", help="list available clients")
-listinggroup.add_option("-O", "--listtags", dest="listtags", action="store_true", help="List available tags")
-listinggroup.add_option("-V", "--listvms", dest="listvms", action="store_true", help="list all vms,along with theit status")
+listinggroup = optparse.OptionGroup(parser, 'Listing options')
+listinggroup.add_option('-l', '--listprofiles', dest='listprofiles', action='store_true', help='list available profiles')
+listinggroup.add_option('-E', '--listexports', dest='listexports', action='store_true', help='List machines in export domain')
+listinggroup.add_option('-H', '--listhosts', dest='listhosts', action='store_true', help='List hosts')
+listinggroup.add_option('-I', '--listisos', dest='listisos', action='store_true', help='List isos')
+listinggroup.add_option('-L', '--listclients', dest="listclients", action='store_true', help='list available clients')
+listinggroup.add_option('-O', '--listtags', dest="listtags", action='store_true', help='List available tags')
+listinggroup.add_option('-T', '--listtemplates', dest='listtemplates', action='store_true', help='list available templates,')
+listinggroup.add_option('-V', '--listvms', dest='listvms', action='store_true', help='list all vms,along with their status')
 parser.add_option_group(listinggroup)
 
 cobblergroup = optparse.OptionGroup(parser, "Cobbler options")
@@ -107,6 +110,8 @@ foremangroup.add_option("--hostgroup", dest="hostgroup", type="string", help="Fo
 foremangroup.add_option("--puppetclasses", dest="puppetclasses", type="string", help="Puppet classes to add to host, separated by ,")
 parser.add_option_group(foremangroup)
 
+parser.add_option('-v', '--debug', dest='debug', default=False, action='store_true', help='Debug')
+parser.add_option('--rootpw', dest='rootpw', type = 'string', help='Root password when using cloud-init')
 parser.add_option("-A", "--activate", dest="activate", type="string", help="Activate specified storageDomain")
 parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
 parser.add_option("-M", "--maintenance", dest="maintenance", type="string", help="Put in maintenance specified storageDomain")
@@ -132,8 +137,10 @@ listisos = options.listisos
 host = options.host
 listexports = options.listexports
 listhosts = options.listhosts
+listtemplates = options.listtemplates
 listvms = options.listvms
 listprofiles = options.listprofiles
+debug = options.debug
 new = options.new
 cobbleruser = None
 cobblermac = None
@@ -146,6 +153,7 @@ ip2 = options.ip2
 ip3 = options.ip3
 ip4 = options.ip4
 dns = options.dns
+dns1 = options.dns1
 activate = options.activate
 maintenance = options.maintenance
 preferred = options.preferred
@@ -158,6 +166,7 @@ if memory2:
 restart = options.restart
 start = options.start
 runonce = options.runonce
+cloudinit = options.cloudinit
 importvm = options.importvm
 stop = options.stop
 summary = options.summary
@@ -189,7 +198,6 @@ migrate = options.migrate
 template = options.template
 mac1 = options.mac1
 mac2 = options.mac2
-#hanging = options.hanging
 macaddr = []
 low=None
 guestrhel332 = "rhel_3"
@@ -212,6 +220,26 @@ guestwindows200864 = "windows_2008x64"
 foremanos,foremanenv,foremanarch,foremanpuppet,foremanptable = None,None,None,None,None
 hostgroup = options.hostgroup
 puppetclasses = options.puppetclasses
+rootpw = options.rootpw
+
+def createprofiles(client):
+    clientfile = "%s/%s.ini" % (os.environ['HOME'],client)
+    if not os.path.exists(clientfile):
+        print "You need to create a %s.ini in your homedirectory.Check documentation" % client
+        sys.exit(1)
+    try:
+        c = ConfigParser.ConfigParser()
+        c.read(clientfile)
+        profiles = {}
+        for prof in c.sections():
+            for option in  c.options(prof):
+                if not profiles.has_key(prof):
+                    profiles[prof]={option : c.get(prof,option)}
+                else:
+                    profiles[prof][option] = c.get(prof,option)
+        return profiles
+    except:
+        print ERR_CLIENTNOPROFILE
 
 def findhostbyid(api, id):
     hosts = api.hosts
@@ -612,12 +640,17 @@ if ossl:
 else:
     url = "http://%s:%s/api" % (ohost, oport)
 
-api = API(url=url, username=ouser, password=opassword, insecure=True)
+api = API(url=url, username=ouser, password=opassword, insecure=True, debug=debug)
 
-#LIST VMS
 if listvms:
     for vm in api.vms.list():
         print "%s %s" % (vm.get_name(), vm.status.state)
+    sys.exit(0)
+
+if listtemplates:
+    for t in api.templates.list():
+        if t.status.get_state() == 'ok':
+            print "%s %s" % (t.get_name(), t.get_description())
     sys.exit(0)
 
 if listisos:
@@ -820,6 +853,38 @@ if len(args) == 1 and not new:
             action = params.Action()
             if kernel and initrd and cmdline:
                 action.vm = params.VM(os=params.OperatingSystem(kernel=kernel, initrd=initrd, cmdline=cmdline))
+            if cloudinit:
+                hostname = params.Host(address=name)
+                if ip1 and profile:
+                    profiles=createprofiles(client)
+                    subnet1 = profiles[profile]['subnet1']
+                    ip = params.IP(address=ip1, netmask=subnet1)
+                    network=params.Network(ip=ip)
+                    nic = params.NIC(name='eth0', boot_protocol= 'STATIC', network=network, on_boot=True)
+                else:
+                    nic = params.NIC(name='eth0', boot_protocol= 'DHCP', on_boot=True)
+                nics = params.Nics()
+                nics.add_nic(nic)
+                networkconfiguration = params.NetworkConfiguration(nics=nics)
+                users  = None
+                if rootpw:
+                    user = params.User(user_name='root', password=rootpw)
+                    users = params.Users()
+                    users.add_user(user)
+                if dns:    
+                    domainhost = params.Host(address=dns)
+                    domainhosts = params.Hosts()
+                    domainhosts.add_host(domainhost)
+                    dns = params.DNS(search_domains=domainhosts)
+                    if dns1:
+                        resolvhost = params.Host(address=dns1)
+                        resolvhosts = params.Hosts()
+                        resolvhosts.add_host(resolvhost)
+                        dns.set_servers(resolvhosts)
+                    networkconfiguration.set_dns(dns)
+                cloudinit = params.CloudInit(host=hostname, network_configuration=networkconfiguration, regenerate_ssh_keys=True, users=users)
+                initialization = params.Initialization(cloud_init=cloudinit)
+                action.vm = params.VM(initialization=initialization)
             elif iso:
                 iso = checkiso(api, iso)
                 boot1 = params.Boot(dev="cdrom")
@@ -1137,23 +1202,7 @@ if len(args) == 1 and not new:
             os.popen("remote-viewer vnc://%s:%s &" %  (address,port))
     sys.exit(0)
 
-#parse profile for specific client
-clientfile = "%s/%s.ini" % (os.environ['HOME'],client)
-if not os.path.exists(clientfile):
-    print "You need to create a %s.ini in your homedirectory.Check documentation" % client
-    sys.exit(1)
-try:
-    c = ConfigParser.ConfigParser()
-    c.read(clientfile)
-    profiles = {}
-    for prof in c.sections():
-        for option in  c.options(prof):
-            if not profiles.has_key(prof):
-                profiles[prof]={option : c.get(prof,option)}
-            else:
-                profiles[prof][option] = c.get(prof,option)
-except:
-    print ERR_CLIENTNOPROFILE
+profiles=createprofiles(client)
 
 if listprofiles:
     print "Use one of the availables profiles:"
