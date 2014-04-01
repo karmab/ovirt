@@ -15,6 +15,7 @@ import xmlrpclib
 import ConfigParser
 from ovirtsdk.api import API
 from ovirtsdk.xml import params
+import tempfile
 
 import StringIO
 
@@ -891,7 +892,6 @@ if len(args) == 1 and not new:
                     files = params.Files()
                     cifile = params.File(name=filepath, content=filecontent, type_='PLAINTEXT')
                     files = params.Files(file=[cifile])
-                    #files.set_file(cifile)
                 cloudinit = params.CloudInit(host=hostname, network_configuration=networkconfiguration, regenerate_ssh_keys=True, users=users, files=files)
                 initialization = params.Initialization(cloud_init=cloudinit)
                 action.vm = params.VM(initialization=initialization)
@@ -1120,8 +1120,9 @@ if len(args) == 1 and not new:
                 api.vms.get(name).start()
                 print "VM %s started" % name
     if restart:
-        if api.vms.get(name).status.state!="down":api.vms.get(name).stop()
-
+        if api.vms.get(name).status.state!="down":
+            api.vms.get(name).stop()
+        api.vms.get(name).start()
         print "VM %s restarted" % name
     vm = api.vms.get(name=name)
     if not vm:
