@@ -742,7 +742,7 @@ if summary:
                 continue
             cludc = api.datacenters.get(id=clu.get_data_center().get_id()).get_name()
             if cludc != ds.get_name():continue
-            print "Cluster: %s" % (clu.name)
+            print "Cluster: %s Id: %s" % (clu.name, clu.id)
             for net in clu.networks.list():
                 if net.get_display():
                     print "Network: %s  (Set as display network) Id: %s" % (net.name,net.id)
