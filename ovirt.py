@@ -80,7 +80,7 @@ actiongroup.add_option('-Q', '--forcekill', dest='forcekill', action='store_true
 actiongroup.add_option('-5', '--template', dest='template', type="string", help='Deploy VM from template')
 actiongroup.add_option('-6', '--import', dest='importvm', type='string', help='Import specified VM')
 actiongroup.add_option('-7', "--runonce", dest='runonce', action="store_true", help='Runonce VM.you will need to pass kernel,initrd and cmdline')
-actiongroup.add_option('-8', '--cloudinit', dest='cloudinit', action='store_true', help='Use Cloudinit when launching VM.you will need to pass ip1, dns and dns1 and profile. name will be derived from the vm s name, subnet from your profile')
+actiongroup.add_option('-8', '--cloudinit', dest='cloudinit', action='store_true', help='Use Cloudinit when launching VM.you will need to pass ip1, dns and dns1 and profile. name will be derived from the vm s name, subnet and gateway from your profile')
 actiongroup.add_option('--dns1', dest='dns1', type='string', help='dns server to use along with Cloudinit')
 actiongroup.add_option('--filepath', dest='filepath', type='string', help='file path to create along with Cloudinit')
 actiongroup.add_option('--filecontent', dest='filecontent', type='string', help='file content to create along with Cloudinit')
@@ -860,10 +860,13 @@ if len(args) == 1 and not new:
                 action.vm = params.VM(os=params.OperatingSystem(kernel=kernel, initrd=initrd, cmdline=cmdline))
             if cloudinit:
                 hostname = params.Host(address=name)
+                gateway = None
                 if ip1 and profile:
                     profiles=createprofiles(client)
                     subnet1 = profiles[profile]['subnet1']
-                    ip = params.IP(address=ip1, netmask=subnet1)
+                    if profiles[profile].has_key('gateway'):
+                        gateway = profiles[profile]['gateway']
+                    ip = params.IP(address=ip1, netmask=subnet1, gateway=gateway)
                     network=params.Network(ip=ip)
                     nic = params.NIC(name='eth0', boot_protocol= 'STATIC', network=network, on_boot=True)
                 else:
@@ -1448,6 +1451,7 @@ if cobbler:
 
 if cobbler:
     gwstatic,gwbackup,staticroutes,backuproutes=None,None,None,None
+    gateway = None
     if profiles[profile].has_key("nextserver"):
         nextserver = profiles[profile]['nextserver']
     if profiles[profile].has_key("gwbackup"):
@@ -1464,6 +1468,8 @@ if cobbler:
         subnet3 = profiles[profile]['subnet3']
     if profiles[profile].has_key("subnet4"):
         subnet4 = profiles[profile]['subnet4']
+    if profiles[profile].has_key("gateway"):
+        gateway = profiles[profile]['gateway']
     if numinterfaces == 1:
         if not subnet1:
             print "Missing subnet in client ini file.Check documentation"
@@ -1556,9 +1562,10 @@ if cobbler:
         s.modify_system(system, 'modify_interface', eth1, token)
         s.modify_system(system, 'modify_interface', eth2, token)
         s.modify_system(system, 'modify_interface', eth3, token)
-
+    if gateway:
+        s.modify_system(system, 'gateway', gateway, token)
     #if ksopts:
-    #   s.modify_system(system_id,"kernel_options", ksopts, token)
+    #   s.modify_system(system,"kernel_options", ksopts, token)
     if cmdline:
         s.modify_system(system,"ks_meta", cmdline, token)
 
