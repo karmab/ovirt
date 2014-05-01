@@ -64,7 +64,7 @@ actiongroup.add_option("-k", "--host", dest="host", type="string", help="Host to
 actiongroup.add_option("-o", "--console", dest="console", action="store_true", help="Get a console")
 actiongroup.add_option("-P", "--preferred", dest="preferred", type="string", help="Set preferred host")
 actiongroup.add_option("-q", "--quit", dest="isoquit", action="store_true", help="Remove iso from VM")
-actiongroup.add_option("-r", "--restart", dest="restart", action="store_true", help="Restart vm")
+actiongroup.add_option("-r", "--reboot", dest="reboot", action="store_true", help="Restart vm")
 actiongroup.add_option("-s", "--start", dest="start", action="store_true", help="Start VM")
 actiongroup.add_option("--tags", dest="tags", type="string", help="Add tags to VM")
 actiongroup.add_option("-u", "--deletetag", dest="deletetag", type="string", help="Delete tag from VM")
@@ -168,7 +168,7 @@ cmdline = options.cmdline
 memory2 = options.memory2
 if memory2:
     memory2 = memory2*MB
-restart = options.restart
+reboot = options.reboot
 start = options.start
 runonce = options.runonce
 cloudinit = options.cloudinit
@@ -1122,16 +1122,18 @@ if len(args) == 1 and not new:
             else:
                 api.vms.get(name).start()
                 print "VM %s started" % name
-    if restart:
-        if api.vms.get(name).status.state!="down":
-            api.vms.get(name).stop()
-        api.vms.get(name).start()
-        print "VM %s restarted" % name
+    if reboot:
+        #if api.vms.get(name).status.state!="down":
+        #    api.vms.get(name).stop()
+        #api.vms.get(name).start()
+        api.vms.get(name).reboot()
+        print "VM %s rebooted" % name
     vm = api.vms.get(name=name)
     if not vm:
         print "VM %s not found.Leaving..." % name
         sys.exit(1)
     print "name: %s" % vm.name
+    print dir(vm)
     print "started at: %s" % vm.start_time
     print "created at: %s" % vm.creation_time
     print "uid: %s" % vm.get_id()
