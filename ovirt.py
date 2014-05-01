@@ -1133,7 +1133,6 @@ if len(args) == 1 and not new:
         print "VM %s not found.Leaving..." % name
         sys.exit(1)
     print "name: %s" % vm.name
-    print dir(vm)
     print "started at: %s" % vm.start_time
     print "created at: %s" % vm.creation_time
     print "uid: %s" % vm.get_id()
