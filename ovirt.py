@@ -1123,10 +1123,10 @@ if len(args) == 1 and not new:
                 api.vms.get(name).start()
                 print "VM %s started" % name
     if reboot:
-        #if api.vms.get(name).status.state!="down":
-        #    api.vms.get(name).stop()
-        #api.vms.get(name).start()
-        api.vms.get(name).reboot()
+        if api.vms.get(name).status.state!="down":
+            api.vms.get(name).stop()
+        api.vms.get(name).start()
+        #api.vms.get(name).reboot()
         print "VM %s rebooted" % name
     vm = api.vms.get(name=name)
     if not vm:
