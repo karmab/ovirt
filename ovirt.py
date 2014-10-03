@@ -636,10 +636,15 @@ if summary:
             if cludc != ds.get_name():continue
             print "Cluster: %s Id: %s" % (clu.name, clu.id)
             for net in clu.networks.list():
+		vlan = net.get_vlan()
+		if vlan:
+			vlanid = vlan.get_id()
+		else:
+			vlanid = ''
                 if net.get_display():
-                    print "Network: %s  (Set as display network) Id: %s" % (net.name,net.id)
+                    print "Network: %s  (Set as display network) Id: %s Vlan: %s" % (net.name,net.id, vlanid)
                 else:
-                    print "Network: %s Id: %s" % (net.name,net.id)
+                    print "Network: %s Id: %s Vlan: %s" % (net.name,net.id, vlanid)
             for h in hosts:
                 spm = h.get_storage_manager().get_valueOf_()
                 if spm=="true":
