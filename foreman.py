@@ -2,6 +2,7 @@ import json
 import requests
 import simplejson 
 
+perpage='1000'
 #helper functions
 def foremando(url, actiontype=None, postdata=None, user=None, password=None):
     headers = {'content-type': 'application/json', 'Accept': 'application/json' }
@@ -153,18 +154,20 @@ class Foreman:
 
     def hostgroups(self, environment):
         host, port, user , password, protocol = self.host, self.port, self.user, self.password, self.protocol
-        url = "%s://%s:%s/api/v2/hostgroups?search=environment+=+%s" % (protocol, host, port, environment)
+        url = "%s://%s:%s/api/v2/hostgroups?per_page=%s" % (protocol, host, port, perpage)
+	envid = foremangetid(protocol, host, port, user, password, 'environments', environment)
         res= foremando(url=url, user=user, password=password)
         results = {}
         for  r in res['results']:
             name = r["name"]
-            del r["name"]
-            results[name]=r
+	    if r['environment_id']== int(envid) or r['title'].split('/')[0] in results.keys():
+            	del r["name"]
+            	results[name]=r
         return sorted(results)
 
     def classes(self, environment):
         host, port, user , password, protocol = self.host, self.port, self.user, self.password, self.protocol
-        url = "%s://%s:%s/api/v2/puppetclasses?search=environment+=+%s" % (protocol, host, port, environment)
+        url = "%s://%s:%s/api/v2/puppetclasses?search=environment+=+%s&per_page=%s" % (protocol, host, port, environment, perpage)
         res= foremando(url=url, user=user, password=password)
         results=[]
         res = res['results']
