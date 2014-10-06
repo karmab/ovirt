@@ -1145,50 +1145,56 @@ if cobbler:
         sys.exit(0)
 
 if not profile:
-    print "Choose a profile for your machine:"
+    print 'Choose a profile for your machine:'
     #propose available profiles
     for prof in profiles.keys():print prof
     profile = raw_input()
 #check if profile is within our keys or exit
 if not profiles.has_key(profile):
-    print "Invalid profile"
+    print 'Invalid profile'
     sys.exit(0)
 
 #grab all conf from profile
-if profiles[profile].has_key("clu"):
-    clu = profiles[profile]["clu"]
-if profiles[profile].has_key("numinterfaces"):
-    numinterfaces = int(profiles[profile]["numinterfaces"])
-if profiles[profile].has_key("boot1"):
-    boot1 = profiles[profile]["boot1"]
-if profiles[profile].has_key("boot2"):
-    boot2 = profiles[profile]["boot2"]
-if profiles[profile].has_key("iso"):
-    iso = profiles[profile]["iso"]
-if profiles[profile].has_key("storagedomain"):
-    storagedomain = profiles[profile]["storagedomain"]
-if profiles[profile].has_key("netinterface"):
-    netinterface = profiles[profile]["netinterface"]
-if profiles[profile].has_key("diskinterface"):
-    netinterface = profiles[profile]["diskinterface"]
-if profiles[profile].has_key("disksize"):
-    disksize = int(profiles[profile]["disksize"])*GB
-if not guestid and profiles[profile].has_key("guestid"):
-    guestid = profiles[profile]["guestid"]
-if not tags and profiles[profile].has_key("tags"):
-    tags = profiles[profile]["tags"]
-if not kernel and profiles[profile].has_key("kernel"):
-    kernel = profiles[profile]["kernel"]
-if not initrd and profiles[profile].has_key("initrd"):
-    initrd = profiles[profile]["initrd"]
-if not cmdline and profiles[profile].has_key("cmdline"):
-    cmdline = profiles[profile]["cmdline"]
-if not runonce and profiles[profile].has_key("runonce"):
+if profiles[profile].has_key('clu'):
+    clu = profiles[profile]['clu']
+if profiles[profile].has_key('numinterfaces'):
+    numinterfaces = int(profiles[profile]['numinterfaces'])
+if profiles[profile].has_key('boot1'):
+    boot1 = profiles[profile]['boot1']
+if profiles[profile].has_key('boot2'):
+    boot2 = profiles[profile]['boot2']
+if profiles[profile].has_key('iso'):
+    iso = profiles[profile]['iso']
+if profiles[profile].has_key('storagedomain'):
+    storagedomain = profiles[profile]['storagedomain']
+if profiles[profile].has_key('netinterface'):
+    netinterface = profiles[profile]['netinterface']
+if profiles[profile].has_key('diskinterface'):
+    netinterface = profiles[profile]['diskinterface']
+if profiles[profile].has_key('disksize'):
+    disksize = int(profiles[profile]['disksize'])*GB
+if not guestid and profiles[profile].has_key('guestid'):
+    guestid = profiles[profile]['guestid']
+if not tags and profiles[profile].has_key('tags'):
+    tags = profiles[profile]['tags']
+if not kernel and profiles[profile].has_key('kernel'):
+    kernel = profiles[profile]['kernel']
+if not initrd and profiles[profile].has_key('initrd'):
+    initrd = profiles[profile]['initrd']
+if not cmdline and profiles[profile].has_key('cmdline'):
+    cmdline = profiles[profile]['cmdline']
+if not runonce and profiles[profile].has_key('runonce'):
     runonce = True
-if not hostgroup and profiles[profile].has_key("hostgroup"):
+if not hostgroup and profiles[profile].has_key('hostgroup'):
     hostgroup = profiles[profile]["hostgroup"]
-if not puppetclasses and profiles[profile].has_key("puppetclasses"):
-    puppetclasses = profiles[profile]["puppetclasses"]
+if profiles[profile].has_key('dns'):
+    dns = profiles[profile]['dns']
+if profiles[profile].has_key('memory'):
+    memory = int(profiles[profile]['memory'])*MB
+if profiles[profile].has_key('numcpu'):
+    numcpu = int(profiles[profile]['numcpu'])
+if not puppetclasses and profiles[profile].has_key('puppetclasses'):
+    puppetclasses = profiles[profile]['puppetclasses']
 
 if extra:
     cmdline = "%s %s" %(cmdline, extra)
@@ -1487,6 +1493,10 @@ if not nolaunch:
         launched = False
         while not launched:
             try:
+            	if host:
+                	hostname = host
+                	host = api.hosts.get(name=host)
+                	action.vm.placement_policy = params.VmPlacementPolicy(host=host)
                 api.vms.get(name).start(action=action)
                 launched = True
             except:
@@ -1497,8 +1507,16 @@ if not nolaunch:
         launched = False
         while not launched:
             try:
-                api.vms.get(name).start()
-                launched = True
+            	if host:
+                	hostname = host
+                	host = api.hosts.get(name=host)
+                	action = params.Action()
+                	placement_policy = params.VmPlacementPolicy(host=host)
+                	action.vm = params.VM(placement_policy=placement_policy)
+                	api.vms.get(name).start(action=action)
+		else:
+                	api.vms.get(name).start()
+		launched = True
             except:
                 print "waiting to launch vm..."
                 time.sleep(5)
