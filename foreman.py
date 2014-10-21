@@ -1,6 +1,17 @@
 import json
+import optparse
 import requests
 import simplejson 
+
+__author__ = "Karim Boumedhel"
+__credits__ = ["Karim Boumedhel"]
+__license__ = "GPL"
+__version__ = "1.1"
+__maintainer__ = "Karim Boumedhel"
+__email__ = "karim.boumedhel@gmail.com"
+__status__ = "Production"
+
+
 
 perpage='1000'
 #helper functions
@@ -71,7 +82,7 @@ class Foreman:
             print "%s deleted in Foreman" % name
         else:
             print "Nothing to do in foreman"
-    def create(self, name, dns, ip, mac=None, operatingsystem=None, environment=None, arch="x86_64", puppet=None, ptable=None, powerup=None, memory=None, core=None, compute=None, hostgroup=None,build=False):
+    def create(self, name, dns, ip, mac=None, operatingsystem=None, environment=None, arch="x86_64", puppet=None, ptable=None, powerup=None, memory=None, core=None, compute=None, profile=None, hostgroup=None,build=False):
         host, port, user , password, protocol = self.host, self.port, self.user, self.password, self.protocol
         name = name.encode('ascii')
         dns = dns.encode('ascii')
@@ -95,6 +106,8 @@ class Foreman:
             core = core.encode('ascii')
         if compute:
             compute = compute.encode('ascii')
+        if profile:
+            profile = profile.encode('ascii')
         if hostgroup:
             hostgroup = hostgroup.encode('ascii')
         url = "%s://%s:%s/api/v2/hosts" % (protocol, host, port)
@@ -127,6 +140,9 @@ class Foreman:
         if compute:
             computeid = foremangetid(protocol, host, port, user, password, 'compute_resources', compute)
             postdata['host']['compute_resource_id'] = computeid
+        if profile:
+            profileid = foremangetid(protocol, host, port, user, password, 'compute_profiles', profile)
+            postdata['host']['compute_profile_id'] = profileid
         if hostgroup:
             hostgroupid = foremangetid(protocol, host, port, user, password, 'hostgroups', hostgroup)
             postdata['host']['hostgroup_id'] = hostgroupid
@@ -289,3 +305,37 @@ class Foreman:
                 overrideurl = "%s://%s:%s/api/v2/smart_class_parameters/%s/override_values/%s" % (protocol, host, port, parameter, overrideid)
                 res = foremando(url=overrideurl, actiontype="PUT", postdata=postdata, user=user, password=password)
                 print "parameter %s updated for %s.%s" % (parameter, name, dns)
+
+if  __name__ =='__main__':
+	usage         = 'script to create systems on foreman'
+	version       = '1.0'
+	parser        = optparse.OptionParser('Usage: %prog [options] system',version=version)
+	creationgroup = optparse.OptionGroup(parser, 'Creation options')
+	creationgroup.add_option('-H', '--host', dest='host', type='string', help='foreman host')
+	creationgroup.add_option('-P', '--port', dest='port', type='string', default='443',help='foreman port')
+	creationgroup.add_option('-u', '--user', dest='user', type='string', default='admin',  help='foreman port')
+	creationgroup.add_option('-p', '--password', dest='password', type='string', default='changeme', help='foreman password')
+	creationgroup.add_option('-n', '--name', dest='name', type='string', help='name')
+	creationgroup.add_option('-d', '--dns', dest='dns', type='string', help='dns')
+	creationgroup.add_option('-i', '--ip', dest='ip', type='string', help='ip')
+	creationgroup.add_option('-m', '--mac', dest='mac', type='string', help='mac')
+	creationgroup.add_option('-X', '--hostgroup', dest='hostgroup', type='string', help='hostgroup')
+	creationgroup.add_option('-b', '--build', action="store_true", help='build')
+	creationgroup.add_option('-c', '--compute', dest='compute', type='string', help='compute')
+	creationgroup.add_option('-Z', '--profile', dest='profile', type='string', default='1-Small', help='profile')
+	parser.add_option_group(creationgroup)
+	(options, args) = parser.parse_args()
+	host      = options.host
+	port      = options.port
+	user      = options.user
+	password  = options.password
+	name      = options.name
+	dns       = options.dns
+	ip        = options.ip
+	mac       = options.mac
+	hostgroup = options.hostgroup
+	build     = options.build
+	compute   = options.compute
+	profile   = options.profile
+	f = Foreman(host, port, user, password, secure= True)	
+	f.create(name=name, dns=dns, ip=ip, mac=mac, hostgroup=hostgroup, compute=compute, profile=profile, build=build)

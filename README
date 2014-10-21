@@ -19,6 +19,7 @@ Contents
     README.txt          		this file
     ovirt.py				start/stop/migrate/creates/deletes virtual machines in ovirt/rhev-m of several clients
     hypervisor.py			start/stop/get console of virtual machines connecting directly to the hypervisor (usefull when manager is down) 
+    foreman.py				class used by ovirt.py for foreman support. can also be used on its own
                                                             
 
 Typical uses
@@ -36,6 +37,8 @@ Typical uses
     START A VM KIPA02 DIRECTLY THROUGH THE HYPERVISOR WITH 
     hypervisor.py -T ~/vdsm_certs -H 192.168.6.1 -s kipa02
 
+    CREATE THE MACHINE DIRECTLY IN FOREMAN (specifying foremanip, name and dns of the vm, the hostgroup and compute resource to use,and build mode)
+    foreman.py -H  192.168.8.223 -n satriani -d xxx.org -X base6 -b -c bumblefoot
 
 Problems?
 ---------
