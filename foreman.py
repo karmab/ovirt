@@ -1,7 +1,12 @@
+#!/usr/bin/python
+
+import ConfigParser
 import json
 import optparse
+import os
 import requests
 import simplejson 
+import sys
 
 __author__ = "Karim Boumedhel"
 __credits__ = ["Karim Boumedhel"]
@@ -11,6 +16,7 @@ __maintainer__ = "Karim Boumedhel"
 __email__ = "karim.boumedhel@gmail.com"
 __status__ = "Production"
 
+ERR_NOFOREMANFILE="You need to create a correct foreman.ini file in your home directory.Check documentation"
 
 
 perpage='1000'
@@ -55,6 +61,15 @@ def foremangetid(protocol, host, port, user, password, searchtype, searchname):
     except:
         return str(result['id'])
 
+def orgid(protocol, host, port, user, password, orgname):
+	url = "%s://%s:%s/api/v2/organizations" % (protocol, host, port)
+        res = foremando(url=url, user=user, password=password)
+        for  r in res['results']:
+            if r['name'] == orgname:
+        	return r['id']
+	return None
+		
+
 #VM CREATION IN FOREMAN
 class Foreman:
     def __init__(self, host, port, user, password,secure=False):
@@ -71,6 +86,9 @@ class Foreman:
         else:
             self.protocol = 'http'
     def delete(self, name, dns=None):
+	if '.' in name:
+		dns  = name.split('.')[1:]
+		name = name.split('.')[0]
         host, user , password, protocol = self.host, self.user, self.password, self.protocol
         name = name.encode('ascii')
         if dns:
@@ -82,7 +100,7 @@ class Foreman:
             print "%s deleted in Foreman" % name
         else:
             print "Nothing to do in foreman"
-    def create(self, name, dns, ip, mac=None, operatingsystem=None, environment=None, arch="x86_64", puppet=None, ptable=None, powerup=None, memory=None, core=None, compute=None, profile=None, hostgroup=None,build=False):
+    def create(self, name, dns, ip, mac=None, operatingsystem=None, environment=None, arch="x86_64", puppet=None, ptable=None, powerup=None, memory=None, core=None, compute=None, profile=None, hostgroup=None,build=False, location=None, organization=None):
         host, port, user , password, protocol = self.host, self.port, self.user, self.password, self.protocol
         name = name.encode('ascii')
         dns = dns.encode('ascii')
@@ -110,6 +128,10 @@ class Foreman:
             profile = profile.encode('ascii')
         if hostgroup:
             hostgroup = hostgroup.encode('ascii')
+        if location:
+            location = location.encode('ascii')
+        if organization:
+            organization = organization.encode('ascii')
         url = "%s://%s:%s/api/v2/hosts" % (protocol, host, port)
         postdata = {}
         if dns:
@@ -149,6 +171,11 @@ class Foreman:
         if ptable:
             ptableid = foremangetid(protocol, host, port, user, password, 'ptables', ptable)
             postdata['host']['ptable_id'] = ptableid
+        if location:
+            locationid = foremangetid(protocol, host, port, user, password, 'locations', location)
+            postdata['host']['location_id'] = locationid
+        if organization:
+            postdata['host']['organization_id'] = orgid(protocol, host, port, user, password, organization)
         result = foremando(url=url, actiontype="POST", postdata=postdata, user=user, password=password)
         if not result.has_key('errors'):
             print "%s created in Foreman" % name
@@ -171,15 +198,20 @@ class Foreman:
     def hostgroups(self, environment):
         host, port, user , password, protocol = self.host, self.port, self.user, self.password, self.protocol
         url = "%s://%s:%s/api/v2/hostgroups?per_page=%s" % (protocol, host, port, perpage)
-	envid = foremangetid(protocol, host, port, user, password, 'environments', environment)
         res= foremando(url=url, user=user, password=password)
-        results = {}
+        results = []
         for  r in res['results']:
-            name = r["name"]
-	    if r['environment_id']== int(envid) or r['title'].split('/')[0] in results.keys():
-            	del r["name"]
-            	results[name]=r
+		results.append(r['title'])
         return sorted(results)
+    def vms(self):
+        host, port, user , password, protocol = self.host, self.port, self.user, self.password, self.protocol
+        url = "%s://%s:%s/api/v2/hosts" % (protocol, host, port)
+        res= foremando(url=url, user=user, password=password)
+        results = []
+        for  r in res['results']:
+		results.append(r['name'])
+        return sorted(results)
+	
 
     def classes(self, environment):
         host, port, user , password, protocol = self.host, self.port, self.user, self.password, self.protocol
@@ -306,36 +338,231 @@ class Foreman:
                 res = foremando(url=overrideurl, actiontype="PUT", postdata=postdata, user=user, password=password)
                 print "parameter %s updated for %s.%s" % (parameter, name, dns)
 
+    def start(self, name, dns=None):
+        host, port, user , password, protocol = self.host, self.port, self.user, self.password, self.protocol
+	if '.' in name:
+		dns  = '.'.join(name.split('.')[1:])
+		name = name.split('.')[0]
+        url = "%s://%s:%s/api/v2/hosts/%s.%s/power" % (protocol, host, port, name,dns)
+	postdata = {}
+	postdata['power_action'] = 'start'
+	postdata = simplejson.dumps(postdata)
+        res= foremando(url=url, actiontype="PUT", postdata=postdata,user=user, password=password)
+	print "machine %s.%s started" % (name, dns)
+
+    def stop(self, name, dns=None):
+        host, port, user , password, protocol = self.host, self.port, self.user, self.password, self.protocol
+	if '.' in name:
+		dns  = '.'.join(name.split('.')[1:])
+		name = name.split('.')[0]
+        url = "%s://%s:%s/api/v2/hosts/%s/power" % (protocol, host, port, name)
+	postdata = {}
+	postdata['power_action'] = 'stop'
+	postdata = simplejson.dumps(postdata)
+        res= foremando(url=url, actiontype="PUT", postdata=postdata,user=user, password=password)
+	print "machine %s.%s stopped" % (parameter, name, dns)
+
+    def console(self, name, dns=None):
+        host, port, user , password, protocol = self.host, self.port, self.user, self.password, self.protocol
+	if '.' in name:
+		dns  = '.'.join(name.split('.')[1:])
+		name = name.split('.')[0]
+        url = "%s://%s:%s/hosts/%s.%s/console" % (protocol, host, port, name, dns)
+	print url
+    def info(self, name, dns=None):
+        host, port, user , password, protocol = self.host, self.port, self.user, self.password, self.protocol
+	if '.' in name:
+		dns  = '.'.join(name.split('.')[1:])
+		name = name.split('.')[0]
+        url = "%s://%s:%s/api/v2/hosts/%s.%s" % (protocol, host, port, name, dns)
+	res = foremando(url=url, user=user, password=password)
+	print "Name: %s" % res['name']
+	print "Profile: %s" % res['compute_profile_name']
+	print "Ip: %s" % res['ip']
+	print "Mac: %s" % res['mac']
+	print "OS: %s" % res['operatingsystem_name']
+	print "Hostgroup: %s" % res['hostgroup_name']
+	print "ENV: %s" % res['environment_name']
+	
+
 if  __name__ =='__main__':
 	usage         = 'script to create systems on foreman'
 	version       = '1.0'
 	parser        = optparse.OptionParser('Usage: %prog [options] system',version=version)
+	actiongroup   = optparse.OptionGroup(parser, 'Action options')
+	actiongroup.add_option('-s', '--start', dest='start', action="store_true" , help='Start system')
+	actiongroup.add_option('-w', '--stop', dest='stop', action="store_true" , help='Stop system')
+	actiongroup.add_option('-o', '--console', dest='console', action="store_true" , help='Get console')
+	parser.add_option_group(actiongroup)
 	creationgroup = optparse.OptionGroup(parser, 'Creation options')
 	creationgroup.add_option('-H', '--host', dest='host', type='string', help='foreman host')
 	creationgroup.add_option('-P', '--port', dest='port', type='string', default='443',help='foreman port')
 	creationgroup.add_option('-u', '--user', dest='user', type='string', default='admin',  help='foreman port')
 	creationgroup.add_option('-p', '--password', dest='password', type='string', default='changeme', help='foreman password')
-	creationgroup.add_option('-n', '--name', dest='name', type='string', help='name')
+	creationgroup.add_option('-n', '--new', action="store_true", help='new')
 	creationgroup.add_option('-d', '--dns', dest='dns', type='string', help='dns')
 	creationgroup.add_option('-i', '--ip', dest='ip', type='string', help='ip')
+	creationgroup.add_option('-k', '--kill', dest="kill", action="store_true", help="Kill machine")
+	creationgroup.add_option('-l', '--location', dest='location', type='string', help='location')
 	creationgroup.add_option('-m', '--mac', dest='mac', type='string', help='mac')
+	creationgroup.add_option('-O', '--organization', dest='organization', type='string', help='Organization')
 	creationgroup.add_option('-X', '--hostgroup', dest='hostgroup', type='string', help='hostgroup')
 	creationgroup.add_option('-b', '--build', action="store_true", help='build')
 	creationgroup.add_option('-c', '--compute', dest='compute', type='string', help='compute')
 	creationgroup.add_option('-Z', '--profile', dest='profile', type='string', default='1-Small', help='profile')
 	parser.add_option_group(creationgroup)
+	listinggroup = optparse.OptionGroup(parser, "Listing options")
+	listinggroup.add_option("-a", "--archs", dest="listarchs", action="store_true", help="List archs")
+	listinggroup.add_option("--domains", dest="listdomains", action="store_true", help="List domains")
+	listinggroup.add_option("--environments", dest="listenvironments", action="store_true", help="List environments")
+	listinggroup.add_option("--hostgroups", dest="listhostgroups", action="store_true", help="List hostgroups")
+	listinggroup.add_option('-V','--listvms', dest="listvms", action="store_true", help="List Machines")
+	listinggroup.add_option("--oses", dest="listos", action="store_true", help="List os")
+	listinggroup.add_option("--puppets", dest="listpuppets", action="store_true", help="List puppets")
+	listinggroup.add_option("-L", "--clients", dest="listclients", action="store_true", help="list available clients")
+	listinggroup.add_option("-R", "--computes", dest="listcomputes", action="store_true", help="List compute resources")
+	listinggroup.add_option("-9", "--switchclient", dest="switchclient", type="string", help="Switch default client")
+	parser.add_option_group(listinggroup)
+	parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
 	(options, args) = parser.parse_args()
-	host      = options.host
-	port      = options.port
-	user      = options.user
-	password  = options.password
-	name      = options.name
-	dns       = options.dns
-	ip        = options.ip
-	mac       = options.mac
-	hostgroup = options.hostgroup
-	build     = options.build
-	compute   = options.compute
-	profile   = options.profile
+	host             = options.host
+	port             = options.port
+	user             = options.user
+	password         = options.password
+	new              = options.new
+	dns              = options.dns
+	ip               = options.ip
+	kill             = options.kill
+	location         = options.location
+	mac              = options.mac
+	organization     = options.organization
+	hostgroup        = options.hostgroup
+	build            = options.build
+	compute          = options.compute
+	profile          = options.profile
+	listenvironments = options.listenvironments
+	listvms          = options.listvms
+	listhostgroups   = options.listhostgroups
+	listarchs        = options.listarchs
+	listos           = options.listos
+	listdomains      = options.listdomains
+	listpuppets      = options.listpuppets
+	listcomputes     = options.listcomputes
+	#puppetclass     = options.puppetclass
+	listclients      = options.listclients
+	switchclient     = options.switchclient
+	client           = options.client
+	start            = options.start
+	stop             = options.stop
+	console          = options.console
+	env              = 'production'
+
+
+	foremanconffile  ="%s/foreman.ini" %(os.environ['HOME'])
+	#parse foreman client auth file
+	if not os.path.exists(foremanconffile):
+    		print "Missing %s in your  home directory.Check documentation" % foremanconffile
+    		sys.exit(1)
+	try:
+    		c = ConfigParser.ConfigParser()
+    		c.read(foremanconffile)
+    		foremans={}
+    		default={}
+    		for cli in c.sections():
+        		for option in  c.options(cli):
+            			if cli=="default":
+                			default[option]=c.get(cli,option)
+                			continue
+            			if not foremans.has_key(cli):
+                			foremans[cli]={option : c.get(cli,option)}
+            			else:
+                			foremans[cli][option]=c.get(cli,option)
+	except KeyError,e:
+    		print ERR_NOFOREMANFILE
+    		print e
+    		os._exit(1)
+	if listclients:
+    		print "Available Clients:"
+    		for cli in  sorted(foremans):
+        		print cli
+    		if default.has_key("client"):
+			print "Current default client is: %s" % (default["client"])
+    		sys.exit(0)
+	if switchclient:
+    		if switchclient not in foremans.keys():
+        		print "Client not defined...Leaving"
+    		else:
+        		mod = open(foremanconffile).readlines()
+        		f=open(foremanconffile,"w")
+        		for line in mod:
+            			if line.startswith("client"):
+                			f.write("client=%s\n" % switchclient)
+            			else:
+                			f.write(line)
+        		f.close()
+        		print "Default Client set to %s" % (switchclient)
+    			sys.exit(0)
+	if not client:
+    		try:
+        		client=default['client']
+    		except:
+        		print "No client defined as default in your ini file or specified in command line"
+			os._exit(1)
+	try:
+		if not host and foremans[client].has_key('host'):
+    			host=foremans[client]["host"]
+    		if not port and foremans[client].has_key("port"):
+        		port = foremans[client]["port"]
+    		if not user and foremans[client].has_key("user"):
+        		user = foremans[client]["user"]
+	    	if not password and foremans[client].has_key("password"):
+			password = foremans[client]["password"]
+	    	if not mac and foremans[client].has_key("mac"):
+			mac = foremans[client]["mac"]
+	    	if foremans[client].has_key("os"):
+			foremanos = foremans[client]["os"]
+	    	if foremans[client].has_key("env"):
+			env = foremans[client]["env"]
+	    	if foremans[client].has_key("arch"):
+			arch = foremans[client]["arch"]
+	    	if foremans[client].has_key("puppet"):
+			puppet = foremans[client]["puppet"]
+	    	if foremans[client].has_key("ptable"):
+			ptable = foremans[client]["ptable"]
+	    	if not dns and foremans[client].has_key('dns'):
+			dns = foremans[client]['dns']
+	    	if not organization and foremans[client].has_key('organization'):
+			organization = foremans[client]['organization']
+	    	if not location and foremans[client].has_key('location'):
+			location = foremans[client]['location']
+
+	except KeyError,e:
+    		print "Problem parsing foreman ini file:Missing parameter %s" % e
+    		os._exit(1)
+
 	f = Foreman(host, port, user, password, secure= True)	
-	f.create(name=name, dns=dns, ip=ip, mac=mac, hostgroup=hostgroup, compute=compute, profile=profile, build=build)
+	if listhostgroups:
+		for hg in sorted(f.hostgroups(env)):
+			print hg
+		sys.exit(0)
+	if listvms:
+		for vm in sorted(f.vms()):
+			print vm
+		sys.exit(0)
+	if len(args) != 1:
+		print "Usage:foreman.py [options] name"
+		sys.exit(0)
+	name = args[0]
+	if new:
+		f.create(name=name, dns=dns, ip=ip, mac=mac, hostgroup=hostgroup, compute=compute, profile=profile, build=build, location=location, organization= organization)
+		sys.exit(0)
+	if kill:
+		f.delete(name=name, dns=dns)
+		sys.exit(0)
+	if start:
+		f.start(name=name, dns=dns)
+	if stop:
+		f.stop(name=name, dns=dns)
+	if console:
+		f.console(name=name, dns=dns)
+        f.info(name=name, dns=dns)

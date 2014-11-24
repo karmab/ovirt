@@ -5,7 +5,6 @@ used some rhev samples from https://access.redhat.com/knowledge/docs/en-US/Red_H
 used http://theforeman.org/api.html for foreman
 """
 
-import pycurl
 import optparse
 import os
 import simplejson
