@@ -42,7 +42,7 @@ creationgroup.add_option("-c", "--cpu", dest="numcpu", type="int", help="Specify
 creationgroup.add_option("-d", "--disk", dest="disksize2", metavar="DISKSIZE",type="int", help="Specify Disk size,in Go at VM creation")
 creationgroup.add_option("-e", "--extra", dest="extra", type="string", help="Extra parameters to add to cmdline")
 creationgroup.add_option("-f", "--diskformat", dest="diskformat", type="string", help="Specify Disk mode.Can be raw or cow")
-creationgroup.add_option("-m", "--memory", dest="memory2", metavar="MEMORY",type="int", help="Specify Memory, in Mo")
+creationgroup.add_option("-m", "--memory", dest="memory2", metavar="MEMORY",type="int", help="Specify Memory, in Mo to override when creating or to set (when vm is down)")
 creationgroup.add_option("-n", "--new", dest="new",action="store_true", help="Create new VM")
 creationgroup.add_option("-p", "--profile", dest="profile",type="string", help="specify Profile")
 creationgroup.add_option('-t', '--thin', dest="thin", action="store_true", help="Use thin provisioning for disk")
@@ -973,7 +973,6 @@ if len(args) == 1 and not new:
             vm.update()
             print "Memory updated to %d" % memory2
     if deldisk:
-            #print dir(api.vms.get(name).disks.get(name=deldisk))
             api.vms.get(name).disks.get(name=deldisk).delete()
             print "Disk %s deleted from %s" % (deldisk, vm.name)
     if adddisk:
