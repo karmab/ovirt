@@ -56,6 +56,7 @@ parser.add_option_group(creationgroup)
 
 actiongroup = optparse.OptionGroup(parser, "Action options")
 actiongroup.add_option("-a", "--adddisk", dest="adddisk", metavar="DISKSIZE",type="int", help="Specify Disk size,in Go to add")
+actiongroup.add_option("--deldisk", dest="deldisk", metavar="DISKNAME",type="string", help="Specify Disk name to delete")
 actiongroup.add_option("-g", "--guestid", dest="guestid", type="string", help="Change guestid of VM")
 actiongroup.add_option("-i", "--iso", dest="iso", type="string", help="Specify iso to add to VM")
 actiongroup.add_option("-j", "--migrate", dest="migrate", action="store_true", help="Migrate VM")
@@ -166,8 +167,8 @@ kernel = options.kernel
 initrd = options.initrd
 cmdline = options.cmdline
 memory2 = options.memory2
-if memory2:
-    memory2 = memory2*MB
+if options.memory2:
+    memory2 = options.memory2*MB
 reboot = options.reboot
 start = options.start
 runonce = options.runonce
@@ -181,6 +182,7 @@ kill = options.kill
 forcekill = options.forcekill
 clu = options.clu
 storagedomain = options.storagedomain
+deldisk = options.deldisk
 adddisk = options.adddisk
 if adddisk:
     adddisk = adddisk*GB
@@ -966,6 +968,14 @@ if len(args) == 1 and not new:
         placement_policy = params.VmPlacementPolicy(host=host)
         vm.placement_policy = placement_policy
         vm.update()
+    if memory2:
+    	    vm.memory = memory2
+            vm.update()
+            print "Memory updated to %d" % memory2
+    if deldisk:
+            #print dir(api.vms.get(name).disks.get(name=deldisk))
+            api.vms.get(name).disks.get(name=deldisk).delete()
+            print "Disk %s deleted from %s" % (deldisk, vm.name)
     if adddisk:
         if not storagedomain:
             print "No Storage Domain specified"
@@ -997,9 +1007,7 @@ if len(args) == 1 and not new:
             print "Waiting for disk to be available..."
             time.sleep(5)
         api.vms.get(name).disks.add(disk1)
-        print api.vms.get(name).disks.get(id=disk1id)
         while not api.vms.get(name).disks.get(id=disk1id):
-            print api.vms.get(name).disks.get(id=disk1id)
             print "Waiting for disk to be added to VM..."
             time.sleep(2)
         api.vms.get(name).disks.get(id=disk1id).activate()
