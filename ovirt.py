@@ -573,13 +573,12 @@ if listhosts:
     #create a dict hostid->vms
     hosts={}
     for vm in api.vms.list():
-        if vm.get_host() !=None:
-            name, hostid=vm.get_name(), vm.get_host().get_id()
-        if hosts.has_key(hostid):
-            hosts[hostid].append(name)
-        else:
-            hosts[hostid] = [name]
-
+        if vm.get_host() != None:
+            name, hostid = vm.get_name(), vm.get_host().get_id()
+            if hosts.has_key(hostid):
+		hosts[hostid].append(name)
+            else:
+		hosts[hostid] = [name]
     for h in api.hosts.list():
         print "Name: %s  " % h.get_name()
         print "Cluster: %s  " % findclubyid(api,h.get_cluster().get_id())
