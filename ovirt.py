@@ -42,7 +42,7 @@ creationgroup.add_option("-c", "--cpu", dest="numcpu", type="int", help="Specify
 creationgroup.add_option("-d", "--disk", dest="disksize2", metavar="DISKSIZE",type="int", help="Specify Disk size,in Go at VM creation")
 creationgroup.add_option("-e", "--extra", dest="extra", type="string", help="Extra parameters to add to cmdline")
 creationgroup.add_option("-f", "--diskformat", dest="diskformat", type="string", help="Specify Disk mode.Can be raw or cow")
-creationgroup.add_option("-m", "--memory", dest="memory2", metavar="MEMORY",type="int", help="Specify Memory, in Mo")
+creationgroup.add_option("-m", "--memory", dest="memory2", metavar="MEMORY",type="int", help="Specify Memory, in Mo to override when creating or to set (when vm is down)")
 creationgroup.add_option("-n", "--new", dest="new",action="store_true", help="Create new VM")
 creationgroup.add_option("-p", "--profile", dest="profile",type="string", help="specify Profile")
 creationgroup.add_option('-t', '--thin', dest="thin", action="store_true", help="Use thin provisioning for disk")
@@ -56,6 +56,7 @@ parser.add_option_group(creationgroup)
 
 actiongroup = optparse.OptionGroup(parser, "Action options")
 actiongroup.add_option("-a", "--adddisk", dest="adddisk", metavar="DISKSIZE",type="int", help="Specify Disk size,in Go to add")
+actiongroup.add_option("--deldisk", dest="deldisk", metavar="DISKNAME",type="string", help="Specify Disk name to delete")
 actiongroup.add_option("-g", "--guestid", dest="guestid", type="string", help="Change guestid of VM")
 actiongroup.add_option("-i", "--iso", dest="iso", type="string", help="Specify iso to add to VM")
 actiongroup.add_option("-j", "--migrate", dest="migrate", action="store_true", help="Migrate VM")
@@ -166,8 +167,8 @@ kernel = options.kernel
 initrd = options.initrd
 cmdline = options.cmdline
 memory2 = options.memory2
-if memory2:
-    memory2 = memory2*MB
+if options.memory2:
+    memory2 = options.memory2*MB
 reboot = options.reboot
 start = options.start
 runonce = options.runonce
@@ -181,6 +182,7 @@ kill = options.kill
 forcekill = options.forcekill
 clu = options.clu
 storagedomain = options.storagedomain
+deldisk = options.deldisk
 adddisk = options.adddisk
 if adddisk:
     adddisk = adddisk*GB
@@ -571,13 +573,12 @@ if listhosts:
     #create a dict hostid->vms
     hosts={}
     for vm in api.vms.list():
-        if vm.get_host() !=None:
-            name, hostid=vm.get_name(), vm.get_host().get_id()
-        if hosts.has_key(hostid):
-            hosts[hostid].append(name)
-        else:
-            hosts[hostid] = [name]
-
+        if vm.get_host() != None:
+            name, hostid = vm.get_name(), vm.get_host().get_id()
+            if hosts.has_key(hostid):
+		hosts[hostid].append(name)
+            else:
+		hosts[hostid] = [name]
     for h in api.hosts.list():
         print "Name: %s  " % h.get_name()
         print "Cluster: %s  " % findclubyid(api,h.get_cluster().get_id())
@@ -966,6 +967,13 @@ if len(args) == 1 and not new:
         placement_policy = params.VmPlacementPolicy(host=host)
         vm.placement_policy = placement_policy
         vm.update()
+    if memory2:
+    	    vm.memory = memory2
+            vm.update()
+            print "Memory updated to %d" % memory2
+    if deldisk:
+            api.vms.get(name).disks.get(name=deldisk).delete()
+            print "Disk %s deleted from %s" % (deldisk, vm.name)
     if adddisk:
         if not storagedomain:
             print "No Storage Domain specified"
@@ -997,9 +1005,7 @@ if len(args) == 1 and not new:
             print "Waiting for disk to be available..."
             time.sleep(5)
         api.vms.get(name).disks.add(disk1)
-        print api.vms.get(name).disks.get(id=disk1id)
         while not api.vms.get(name).disks.get(id=disk1id):
-            print api.vms.get(name).disks.get(id=disk1id)
             print "Waiting for disk to be added to VM..."
             time.sleep(2)
         api.vms.get(name).disks.get(id=disk1id).activate()
