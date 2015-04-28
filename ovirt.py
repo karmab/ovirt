@@ -553,7 +553,7 @@ if listvms:
         name, status = vm.get_name(), vm.status.state
         guestinfo = vm.get_guest_info()
         ips = ''
-	if guestinfo !=None and guestinfo.get_ips != None:
+	if guestinfo !=None and guestinfo.get_ips() != None:
 		for element in guestinfo.get_ips().get_ip():
 			ips = "%s %s" % (ips, element.get_address())
         vms.add_row([name, status, ips])
