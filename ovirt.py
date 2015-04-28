@@ -755,7 +755,7 @@ if template:
         name = args[0]
         clu = temp.get_cluster()
         api.vms.add(params.VM(name=name,cluster=clu,template=temp))
-	for disk in api.vms.get(name=template).disks.list():
+	for disk in api.vms.get(name=name).disks.list():
 		diskready = False
 		while not diskready:
 			status = disk.get_status().get_state()
