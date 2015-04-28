@@ -7,6 +7,7 @@ used http://theforeman.org/api.html for foreman
 
 import optparse
 import os
+from prettytable import PrettyTable
 import simplejson
 import sys
 import time
@@ -95,7 +96,7 @@ listinggroup.add_option('-I', '--listisos', dest='listisos', action='store_true'
 listinggroup.add_option('-L', '--listclients', dest="listclients", action='store_true', help='list available clients')
 listinggroup.add_option('-O', '--listtags', dest="listtags", action='store_true', help='List available tags')
 listinggroup.add_option('-T', '--listtemplates', dest='listtemplates', action='store_true', help='list available templates,')
-listinggroup.add_option('-V', '--listvms', dest='listvms', action='store_true', help='list all vms,along with their status')
+listinggroup.add_option('-V', '--listvms', dest='listvms', action='store_true', help='list all vms,along with their status and their ip')
 parser.add_option_group(listinggroup)
 
 cobblergroup = optparse.OptionGroup(parser, "Cobbler options")
@@ -351,11 +352,16 @@ except:
     os._exit(1)
 
 if listclients:
-    print "Available Clients:"
+    clientstable = PrettyTable(["Name","Current"])
+    clientstable.align["Name"] = "l"
     for cli in  sorted(ovirts):
-        print cli
-    if default.has_key("client"):
-        print "Current default client is: %s" % (default["client"])
+        clientsinfo = [cli]
+    	if default.has_key("client") and default['client'] == cli:
+		clientsinfo.append('X')
+	else:
+		clientsinfo.append('')
+	clientstable.add_row(clientsinfo)
+    print clientstable
     sys.exit(0)
 
 if switchclient:
@@ -541,14 +547,26 @@ else:
 api = API(url=url, username=ouser, password=opassword, insecure=True, debug=debug)
 
 if listvms:
+    vms = PrettyTable(["Name", "Status", "Ips"])
+    vms.align["Name"] = "l"
     for vm in api.vms.list():
-        print "%s %s" % (vm.get_name(), vm.status.state)
+        name, status = vm.get_name(), vm.status.state
+        guestinfo = vm.get_guest_info()
+        ips = ''
+	if guestinfo !=None and guestinfo.get_ips != None:
+		for element in guestinfo.get_ips().get_ip():
+			ips = "%s %s" % (ips, element.get_address())
+        vms.add_row([name, status, ips])
+    print vms
     sys.exit(0)
 
 if listtemplates:
+    templates = PrettyTable(["Name", "Description"])
+    templates.align["Name"] = "l"
     for t in api.templates.list():
         if t.status.get_state() == 'ok':
-            print "%s %s" % (t.get_name(), t.get_description())
+		templates.add_row([t.get_name(),t.get_description()])
+    print templates
     sys.exit(0)
 
 if listisos:
@@ -556,8 +574,11 @@ if listisos:
     sys.exit(0)
 
 if listtags:
+    tagstable = PrettyTable(["Name"])
+    tagstable.align["Name"] = "l"
     for tag  in api.tags.list():
-        print "TAG: %s" % tag.get_name()
+        tagstable.add_row([tag.get_name()])
+    print tagstable
     sys.exit(0)
 
 if activate:
@@ -570,6 +591,8 @@ if maintenance:
 
 #LIST HOSTS
 if listhosts:
+    hoststable = PrettyTable(["Name", "Cluster", "Ip","Vms"])
+    hoststable.align["Name"] = "l"
     #create a dict hostid->vms
     hosts={}
     for vm in api.vms.list():
@@ -580,24 +603,39 @@ if listhosts:
             else:
 		hosts[hostid] = [name]
     for h in api.hosts.list():
-        print "Name: %s  " % h.get_name()
-        print "Cluster: %s  " % findclubyid(api,h.get_cluster().get_id())
-        print "IP: %s  " % h.get_address()
+        hostinfo = [h.get_name(),findclubyid(api,h.get_cluster().get_id()),h.get_address()]
         hostid = h.get_id()
         if hosts.has_key(hostid):
-            print "VMS: %s  " % ",".join(hosts[hostid])
-        print ""
+            hostinfo.append(",".join(hosts[hostid]))
+	else:
+	    hostinfo.append(None)
+	hoststable.add_row(hostinfo)
+    print hoststable
     sys.exit(0)
 
 if listexports:
+    exportstable = PrettyTable(["Name", "Vms", "Templates"])
+    exportstable.align["Name"] = "l"
     for sd in api.storagedomains.list():
         if sd.get_type()=="export":
             exportdomain = sd.get_name()
-            print "Export domain:%s" % (exportdomain)
+            exportinfo   = [exportdomain] 
+            vmslist = ''
             for vm in api.storagedomains.get(name=exportdomain).vms.list():
-                print "vm:%s" % vm.name
+                if vmslist == '':
+			vmslist = vm.name
+                else:
+                	vmslist = "%s,%s" % (vmslist,vm.name)
+	    exportinfo.append(vmslist)
+            templateslist = ''
             for template in api.storagedomains.get(name=exportdomain).templates.list():
-                print "template:%s" % template.name
+		if templateslist == '':
+			templateslist = template.name
+		else:    
+			templateslist = "%s,%s" % (templateslist,template.name)
+	    exportinfo.append(templateslist)
+	    exportstable.add_row(exportinfo)
+    print exportstable
     sys.exit(0)
 
 #SEARCH VMS
@@ -717,6 +755,15 @@ if template:
         name = args[0]
         clu = temp.get_cluster()
         api.vms.add(params.VM(name=name,cluster=clu,template=temp))
+	for disk in api.vms.get(template).disks.list():
+		diskready = False
+		while not diskready:
+			status = disk.get_status().get_state()
+			if status == 'ok': 
+				diskready = True
+			else:
+                		print "Waiting for disk to be available..."
+            			time.sleep(5)
         print "VM %s deployed from %s" % (name,template)
         if mac1:
             while api.vms.get(name).status.state!="down":
@@ -1082,7 +1129,7 @@ if len(args) == 1 and not new:
         net = api.networks.get(id=nic.network.id).get_name()
         print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,net,nic.interface)
     info = vm.get_guest_info()
-    if info !=None and info.get_ips != None:
+    if info != None and info.get_ips() != None:
         ips = ''
         for element in info.get_ips().get_ip():
             ips = "%s %s" % (ips, element.get_address())

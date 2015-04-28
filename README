@@ -11,6 +11,7 @@ Requisites
 
 - ovirt-engine-sdk-python rpm
 - python-requests rpm 
+- python-prettyparse rpm
 - ovirt.ini file in your home directory or in same directory as program (look at sample for syntax)
 - a client.ini (for instance nyse.ini) in your home directory for every client you want to manage.This file will contain profiles (disksize,number of network interfaces and type,...) used when creating machines (and also by cobbler if you have a cobbler setup) (look at sample for syntax)
 
