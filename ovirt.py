@@ -756,14 +756,10 @@ if template:
         clu = temp.get_cluster()
         api.vms.add(params.VM(name=name,cluster=clu,template=temp))
 	for disk in api.vms.get(name=name).disks.list():
-		diskready = False
-		while not diskready:
-			status = disk.get_status().get_state()
-			if status == 'ok': 
-				diskready = True
-			else:
-                		print "Waiting for disk to be available..."
-            			time.sleep(5)
+		diskid = disk.get_id()
+		while api.disks.get(id=diskid).get_status().get_state() != "ok":
+			print "Waiting for disk to be available..."
+			time.sleep(5)
         print "VM %s deployed from %s" % (name,template)
         if mac1:
             while api.vms.get(name).status.state!="down":
