@@ -21,15 +21,15 @@ This script allows creation/stop/start/runonce/console/add disk or iso/migrate/d
 ##Typical uses
      
 - CREATE VIRTUAL MACHINE V0100 BASED ON PROFILE BE6 FOR CLIENT BIGCOMPANY, PROVIDING IPS FOR COBBLER TOO
-    - ovirt.py -ZC bigcompany -n v0100 -p be6 -1 192.168.1.100 -2 192.168.10.100
+    - `ovirt.py -ZC bigcompany -n v0100 -p be6 -1 192.168.1.100 -2 192.168.10.100`
 -   DELETE VIRTUAL MACHINE V0100 FROM CLIENT NYSE
-    -   ovirt.py -C nyse -K v0100
+    -   `ovirt.py -C nyse -K v0100`
 -    GET A CONSOLE FOR VIRTUAL MACHINE HENDRIX ( IN DEFAULT CLIENT)
-    -    ovirt.py -o hendrix
+    -    `ovirt.py -o hendrix`
 -    START A VM KIPA02 DIRECTLY THROUGH THE HYPERVISOR WITH 
-    -    hypervisor.py -T ~/vdsm_certs -H 192.168.6.1 -s kipa02
+    -    `hypervisor.py -T ~/vdsm_certs -H 192.168.6.1 -s kipa02`
 -    CREATE THE MACHINE DIRECTLY IN FOREMAN (specifying foremanip, name and dns of the vm, the hostgroup and compute resource to use,and build mode)
-    -    foreman.py -H  192.168.8.223 -n satriani -d xxx.org -X base6 -b -c bumblefoot
+    -    `foreman.py -H  192.168.8.223 -n satriani -d xxx.org -X base6 -b -c bumblefoot`
 
 ##Problems?
 
