@@ -1,4 +1,4 @@
-###	    ovirt.py repository
+###ovirt.py repository
 
 This script allows creation/stop/start/runonce/console/add disk or iso/migrate/deploy/listing from template/add tags,... for ovirt/rhev-m virtual machines ( plus creation in cobbler for pxe installs) in a multi-client way
 
@@ -12,10 +12,10 @@ This script allows creation/stop/start/runonce/console/add disk or iso/migrate/d
 
 ##Contents
 
-    README.txt          		this file
-    ovirt.py				start/stop/migrate/creates/deletes virtual machines in ovirt/rhev-m of several clients
-    hypervisor.py			start/stop/get console of virtual machines connecting directly to the hypervisor (usefull when manager is down) 
-    foreman.py				class used by ovirt.py for foreman support. can also be used on its own
+-    README.txt          	this file
+-    ovirt.py				start/stop/migrate/creates/deletes virtual machines in ovirt/rhev-m of several clients
+-    hypervisor.py			start/stop/get console of virtual machines connecting directly to the hypervisor (usefull when manager is down) 
+-    foreman.py				class used by ovirt.py for foreman support. can also be used on its own
                                                             
 
 ##Typical uses
