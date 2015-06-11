@@ -836,7 +836,12 @@ if len(args) == 1 and not new:
                     files = params.Files()
                     cifile = params.File(name=filepath, content=filecontent, type_='PLAINTEXT')
                     files = params.Files(file=[cifile])
-                cloudinit = params.CloudInit(host=hostname, network_configuration=networkconfiguration, regenerate_ssh_keys=True, users=users, files=files)
+                authorized_keys = None
+                if profiles[profile].has_key('key'):
+                        key = profiles[profile]['key']
+                        authorized_key = params.AuthorizedKey(user=params.User(user_name="root"), key=key)
+                        authorized_keys = params.AuthorizedKeys(authorized_key=[authorized_key])
+                cloudinit = params.CloudInit(host=hostname, network_configuration=networkconfiguration, regenerate_ssh_keys=True, users=users, files=files, authorized_keys =authorized_keys)
                 initialization = params.Initialization(cloud_init=cloudinit)
                 action.vm = params.VM(initialization=initialization)
             elif iso:
