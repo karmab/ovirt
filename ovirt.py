@@ -1041,7 +1041,8 @@ if len(args) == 1 and not new:
             disk1 = params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]), name=diskname , size=adddisk, type_='data', status=None, interface=diskinterface, format=diskformat, sparse=sparse, bootable=False)
             disk1 = api.disks.add(disk1)
             disk1id = disk1.get_id()
-        except:
+        except Exception as e:
+	    print e 
             print "Insufficient space in storage domain.Leaving..."
             os._exit(1)
         while api.disks.get(id=disk1id).get_status().get_state() != "ok":
