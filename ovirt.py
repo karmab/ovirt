@@ -1161,17 +1161,43 @@ if len(args) == 1 and not new:
         id=vm.get_host().get_id()
         realaddress = getip(api,vm.get_host().get_id())
         subject = "%s,CN=%s" % (oorg,realaddress)
-        print "Password copied to clipboard:  %s" % ticket
-        #copy to clipboard
-        if os.environ.has_key("KDE_FULL_SESSION") or os.environ.has_key("KDEDIRS"):
-            os.popen("qdbus org.kde.klipper /klipper setClipboardContents %s" % ticket)
-        else:
-            os.popen("xsel", "wb").write(ticket)
+        print "Password:  %s" % ticket
         protocol=vm.get_display().get_type()
-        if protocol=="spice":
-            os.popen("remote-viewer --spice-ca-file %s --spice-host-subject '%s' spice://%s/?port=%s\&tls-port=%s &" %  (oca,subject,address,port,sport))
+        if protocol == 'spice':
+	   ocacontent = open(oca).readlines()
+	   ocacontent = [ line.replace('\n', '\\n') for line in ocacontent]
+	   ocacontent = "".join(ocacontent)
+	   connectiondetails = """[virt-viewer]
+type=spice
+host={address}
+port=-1
+password={ticket}
+tls-port={sport}
+fullscreen=0
+enable-smartcard=0
+enable-usb-autoshare=1
+delete-this-file=0
+usb-filter=-1,-1,-1,-1,0
+tls-ciphers=DEFAULT
+host-subject={subject}
+ca={ocacontent}
+toggle-fullscreen=shift+f11
+release-cursor=shift+f12
+secure-attention=ctrl+alt+end
+secure-channels=main;inputs;cursor;playback;record;display;usbredir;smartcard""".format(subject=subject,ocacontent=ocacontent,address=address,sport=sport,ticket=ticket)
         elif protocol=="vnc":
-            os.popen("remote-viewer vnc://%s:%s &" %  (address,port))
+		connectionsdetails = """[virt-viewer] 
+type=vnc
+host={host} 
+port={port} 
+password={ticket) 
+delete-this-file=0 
+toggle-fullscreen=shift+f11 
+release-cursor=shift+f12 
+secure-attention=ctrl+alt+end""".format(host=host, port=port, ticket=ticket)
+	with open("/tmp/console.vv", "w") as f:
+		f.write(connectiondetails)	
+        os.popen("remote-viewer /tmp/console.vv &")
     sys.exit(0)
 
 profiles=createprofiles(client)
