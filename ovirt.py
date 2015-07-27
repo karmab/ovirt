@@ -1128,7 +1128,10 @@ if len(args) == 1 and not new:
         except:
             print "diskname: N/A"
     for nic in vm.nics.list():
-        net = api.networks.get(id=nic.network.id).get_name()
+	if nic.network is not None:
+        	net = api.networks.get(id=nic.network.id).get_name()
+	else:
+		net = 'N/A'
         print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,net,nic.interface)
     info = vm.get_guest_info()
     if info != None and info.get_ips() != None:
