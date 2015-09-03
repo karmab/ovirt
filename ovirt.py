@@ -1191,13 +1191,12 @@ secure-channels=main;inputs;cursor;playback;record;display;usbredir;smartcard"""
         elif protocol=="vnc":
 		connectiondetails = """[virt-viewer] 
 type=vnc
-host={host} 
+host={address} 
 port={port} 
 password={ticket} 
 delete-this-file=0 
 toggle-fullscreen=shift+f11 
-release-cursor=shift+f12 
-secure-attention=ctrl+alt+end""".format(host=host, port=port, ticket=ticket)
+release-cursor=shift+f12""".format(address=address, port=port, ticket=ticket)
 	with open("/tmp/console.vv", "w") as f:
 		f.write(connectiondetails)	
         os.popen("remote-viewer /tmp/console.vv &")
