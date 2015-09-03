@@ -1189,7 +1189,7 @@ release-cursor=shift+f12
 secure-attention=ctrl+alt+end
 secure-channels=main;inputs;cursor;playback;record;display;usbredir;smartcard""".format(subject=subject,ocacontent=ocacontent,address=address,sport=sport,ticket=ticket)
         elif protocol=="vnc":
-		connectionsdetails = """[virt-viewer] 
+		connectiondetails = """[virt-viewer] 
 type=vnc
 host={host} 
 port={port} 
