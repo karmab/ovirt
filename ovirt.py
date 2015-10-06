@@ -1199,7 +1199,10 @@ toggle-fullscreen=shift+f11
 release-cursor=shift+f12""".format(address=address, port=port, ticket=ticket)
 	with open("/tmp/console.vv", "w") as f:
 		f.write(connectiondetails)	
-        os.popen("remote-viewer /tmp/console.vv &")
+	if os.path.exists('/Users'):
+        	os.popen("/Applications/RemoteViewer.app/Contents/MacOS/RemoteViewer /tmp/console.vv &")
+	else:
+        	os.popen("remote-viewer /tmp/console.vv &")
     sys.exit(0)
 
 profiles=createprofiles(client)
