@@ -855,7 +855,7 @@ if len(args) == 1 and not new:
             elif boot:
                 boot = boot.split(",")
                 boot1 = boot[0]
-                if len(boot) !=2:
+                if len(boot) !=2 or boot[1] == 'None':
                     boot2 = None
                 else:
                     boot2 = boot[1]
@@ -938,7 +938,7 @@ if len(args) == 1 and not new:
     if boot:
         boot = boot.split(",")
         boot1 = boot[0]
-        if len(boot) !=2 or boot[1]='None':
+        if len(boot) !=2 or boot[1] == 'None':
             boot2 = None
         else:
             boot2 = boot[1]
@@ -950,7 +950,6 @@ if len(args) == 1 and not new:
             sys.exit(1)
         boot1 = params.Boot(dev=boot1)
         boot2 = params.Boot(dev=boot2)
-	boot2 = 'None'
         vm.os.boot = [ boot1, boot2 ]
         print "boot options correctly changed for %s" % (name)
         vm.update()
@@ -1097,6 +1096,8 @@ if len(args) == 1 and not new:
     print "boot1: %s" % (vm.os.boot[0].get_dev())
     if len(vm.os.boot)==2:
         print "boot2: %s" % (vm.os.boot[1].get_dev())
+    else:
+        print 'boot2: None'
     for cdrom in vm.get_cdroms().list():
         if cdrom.get_file():print "Cdrom: %s" % cdrom.get_file().get_id()
     if vm.os.kernel or vm.os.initrd or vm.os.cmdline:
