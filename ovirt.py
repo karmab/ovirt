@@ -938,7 +938,7 @@ if len(args) == 1 and not new:
     if boot:
         boot = boot.split(",")
         boot1 = boot[0]
-        if len(boot) !=2:
+        if len(boot) !=2 or boot[1]='None':
             boot2 = None
         else:
             boot2 = boot[1]
@@ -950,6 +950,7 @@ if len(args) == 1 and not new:
             sys.exit(1)
         boot1 = params.Boot(dev=boot1)
         boot2 = params.Boot(dev=boot2)
+	boot2 = 'None'
         vm.os.boot = [ boot1, boot2 ]
         print "boot options correctly changed for %s" % (name)
         vm.update()
