@@ -316,7 +316,7 @@ def checkiso(api, iso=None):
 
     sys.exit(0)
 
-ohost,oport,ouser,opassword,ossl,oca,oorg=None,None,None,None,None,None,None
+ohost,oport,ouser,opassword,ossl,oca,oorg,oproxy=None,None,None,None,None,None,None,None
 #thin provisioning
 sparse = True
 if bad:
@@ -443,6 +443,8 @@ try:
         oca = ovirts[client]["ca"]
     if ovirts[client].has_key("org"):
         oorg = ovirts[client]["org"]
+    if ovirts[client].has_key("proxy"):
+        oproxy = ovirts[client]["proxy"]
     #if ovirts[client].has_key("runonce"):
     #  runonce=True
 except KeyError,e:
@@ -1199,6 +1201,8 @@ password={ticket}
 delete-this-file=0 
 toggle-fullscreen=shift+f11 
 release-cursor=shift+f12""".format(address=address, port=port, ticket=ticket)
+        if oproxy:
+		connectiondetails = "%s\nproxy=%s" % (connectiondetails, oproxy)
 	with open("/tmp/console.vv", "w") as f:
 		f.write(connectiondetails)	
 	if os.path.exists('/Users'):
