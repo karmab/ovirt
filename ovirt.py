@@ -1,8 +1,6 @@
 #!/usr/bin/python
 """
 script to create virtual machines on ovirt/rhev
-used some rhev samples from https://access.redhat.com/knowledge/docs/en-US/Red_Hat_Enterprise_Virtualization/3.1/html/Developer_Guide/index.html and the http://markmc.fedorapeople.org/rhevm-api/en-US/html/
-used http://theforeman.org/api.html for foreman
 """
 
 import optparse
@@ -15,9 +13,7 @@ import xmlrpclib
 import ConfigParser
 from ovirtsdk.api import API
 from ovirtsdk.xml import params
-import tempfile
 from foreman import Foreman
-import StringIO
 
 __author__ = "Karim Boumedhel"
 __credits__ = ["Karim Boumedhel"]
@@ -58,8 +54,8 @@ parser.add_option_group(creationgroup)
 actiongroup = optparse.OptionGroup(parser, "Action options")
 actiongroup.add_option("-a", "--adddisk", dest="adddisk", metavar="DISKSIZE",type="int", help="Specify Disk size,in Go to add")
 actiongroup.add_option("--deldisk", dest="deldisk", metavar="DISKNAME",type="string", help="Specify Disk name to delete")
-actiongroup.add_option("-g", "--guestid", dest="guestid", type="string", help="Change guestid of VM")
-actiongroup.add_option("-i", "--iso", dest="iso", type="string", help="Specify iso to add to VM")
+actiongroup.add_option("-g","--guestid", dest="guestid", type="string", help="Change guestid of VM")
+actiongroup.add_option("--iso", dest="iso", type="string", help="Specify iso to add to VM")
 actiongroup.add_option("-j", "--migrate", dest="migrate", action="store_true", help="Migrate VM")
 actiongroup.add_option("-k", "--host", dest="host", type="string", help="Host to use when migrating a VM")
 actiongroup.add_option("--net", dest="net", type="string", help="Change eth0 net of vm to specify one")
@@ -76,7 +72,6 @@ actiongroup.add_option("-x", "--kernel", dest="kernel", type="string", help="Spe
 actiongroup.add_option("-y", "--initrd", dest="initrd", type="string", help="Specify initrd to boot VM")
 actiongroup.add_option("-z", "--cmdline", dest="cmdline", type="string", help="Specify cmdline to boot VM")
 actiongroup.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom.If you only provivde one options, second boot option will be set to None")
-#actiongroup.add_option("-Q", "--hanging", dest="hanging", action="store_true", help="Check hanging tasks")
 actiongroup.add_option("-K", "--kill", dest="kill", action="store_true" , help="specify VM to kill in virtual center.Confirmation will be asked unless -F/--forcekill flag is set.VM will also be killed in cobbler server if -Z/-cobbler flag set")
 actiongroup.add_option('-Q', '--forcekill', dest='forcekill', action='store_true', help='Dont ask confirmation when killing a VM')
 actiongroup.add_option('-5', '--template', dest='template', type="string", help='Deploy VM from template')
@@ -89,6 +84,7 @@ actiongroup.add_option('--filecontent', dest='filecontent', type='string', help=
 parser.add_option_group(actiongroup)
 
 listinggroup = optparse.OptionGroup(parser, 'Listing options')
+listinggroup.add_option("-i", "--info", dest="info", action="store_true", help="get VM info")
 listinggroup.add_option('-l', '--listprofiles', dest='listprofiles', action='store_true', help='list available profiles')
 listinggroup.add_option('-E', '--listexports', dest='listexports', action='store_true', help='List machines in export domain')
 listinggroup.add_option('-H', '--listhosts', dest='listhosts', action='store_true', help='List hosts')
@@ -111,7 +107,6 @@ parser.add_option_group(cobblergroup)
 foremangroup = optparse.OptionGroup(parser, "Foreman options")
 foremangroup.add_option("-F", "--foreman", dest="foreman", action="store_true", help="Foreman support")
 foremangroup.add_option("--hostgroup", dest="hostgroup", type="string", help="Foreman hostgroup")
-#foremangroup.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
 foremangroup.add_option("--puppetclasses", dest="puppetclasses", type="string", help="Puppet classes to add to host, separated by ,")
 parser.add_option_group(foremangroup)
 
@@ -206,6 +201,7 @@ migrate = options.migrate
 template = options.template
 mac1 = options.mac1
 mac2 = options.mac2
+info = options.info
 macaddr = []
 low=None
 guestrhel332 = "rhel_3"
@@ -316,13 +312,13 @@ def checkiso(api, iso=None):
 
     sys.exit(0)
 
-ohost,oport,ouser,opassword,ossl,oca,oorg,oproxy=None,None,None,None,None,None,None,None
-#thin provisioning
+ohost, oport, ouser, opassword, ossl, oca, oorg, oproxy = None, None, None, None, None, None, None, None
+# thin provisioning
 sparse = True
 if bad:
-    diskinterface,netinterface="ide","e1000"
+    diskinterface, netinterface = 'ide', 'e1000'
 else:
-    diskinterface,netinterface="virtio","virtio"
+    diskinterface, netinterface = 'virtio', 'virtio'
 
 if len(args)!=1 and new:
     print "Usage: %prog [options] vmname"
@@ -1081,73 +1077,18 @@ if len(args) == 1 and not new:
             api.vms.get(name).stop()
         api.vms.get(name).start()
         print "VM %s rebooted" % name
-    if net:
-	interface = 'eth0'
-    	nic = api.vms.get(name).nics.get(name=interface)
-	nic.network=params.Network(name=net)
-    	nic.update()
-	print "VM %s changed %s net to %s" % (name, interface,net) 
+#    if net:
+#        interface = 'eth0'
+#    nic = api.vms.get(name).nics.get(name=interface)
+#	nic.network=params.Network(name=net)
+#    nic.update()
+#	print "VM %s changed %s net to %s" % (name, interface,net)
+
     vm = api.vms.get(name=name)
     if not vm:
         print "VM %s not found.Leaving..." % name
         sys.exit(1)
-    print "name: %s" % vm.name
-    print "started at: %s" % vm.start_time
-    print "created at: %s" % vm.creation_time
-    print "uid: %s" % vm.get_id()
-    print "boot1: %s" % (vm.os.boot[0].get_dev())
-    if len(vm.os.boot)==2:
-        print "boot2: %s" % (vm.os.boot[1].get_dev())
-    else:
-        print 'boot2: None'
-    for cdrom in vm.get_cdroms().list():
-        if cdrom.get_file():print "Cdrom: %s" % cdrom.get_file().get_id()
-    if vm.os.kernel or vm.os.initrd or vm.os.cmdline:
-        print "kernel: %s Initrd:%s Cmdline:%s" % (vm.os.kernel,vm.os.initrd,vm.os.cmdline)
-    print "status: %s" % vm.status.state
-    print "os: %s" % vm.get_os().get_type()
-    if vm.status.state=="up" or vm.status.state=="wait_for_launch" or vm.status.state=="powering_up":
-        host = findhostbyid(api,vm.get_host().get_id())
-        print "host: %s" % host
-    preferredhost = vm.get_placement_policy().get_host()
-    if preferredhost:
-        hostid = preferredhost.get_id()
-        print "preferred Host: %s" % api.hosts.get(id=hostid).get_name()
-    print "cpu: %s sockets:%s" % (vm.cpu.topology.cores,vm.cpu.topology.sockets)
-    if vm.status.state=="up":
-        for info in vm.get_statistics().list():
-            if info.get_description()=="CPU used by guest" or info.get_description()=="Memory used (agent)":
-                for i in info.get_values().get_value():value=i.get_datum()
-                print "%s: %s" % (info.get_description().lower(),value)
-    memory = vm.memory/1024/1024
-    print "memory: %dMb" % memory
-    for disk in vm.disks.list():
-        try:
-            size = disk.size/1024/1024/1024
-            diskid = disk.get_id()
-            for stor in api.disks.get(id=diskid).get_storage_domains().get_storage_domain():
-                storid = stor.get_id()
-                storname = api.storagedomains.get(id=storid).name
-            print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s active: %s storagedomain: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state(),disk.get_active(),storname)
-        except:
-            print "diskname: N/A"
-    for nic in vm.nics.list():
-	if nic.network is not None:
-        	net = api.networks.get(id=nic.network.id).get_name()
-	else:
-		net = 'N/A'
-        print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,net,nic.interface)
-    info = vm.get_guest_info()
-    if info != None and info.get_ips() != None:
-        ips = ''
-        for element in info.get_ips().get_ip():
-            ips = "%s %s" % (ips, element.get_address())
-        print "ips: %s" % (ips)
-    for tag in vm.get_tags().list():
-        print "tags: %s" % tag.get_name()
-    if vm.get_custom_properties():
-        for custom in vm.get_custom_properties().get_custom_property():
-            print "custom Property: %s Value: %s" % (custom.get_name(),custom.get_value())
+
     if console:
         if vm.status.state=="down":
             print "Machine down"
@@ -1209,9 +1150,70 @@ release-cursor=shift+f12""".format(address=address, port=port, ticket=ticket)
         	os.popen("/Applications/RemoteViewer.app/Contents/MacOS/RemoteViewer /tmp/console.vv &")
 	else:
         	os.popen("remote-viewer /tmp/console.vv &")
-    sys.exit(0)
+        sys.exit(0)
 
-profiles=createprofiles(client)
+    if info:
+        print "name: %s" % vm.name
+        if vm.status.state != 'down':
+            print "started at: %s" % vm.start_time
+        print "created at: %s" % vm.creation_time.strftime("%Y-%m-%d %H:%M")
+        print "uid: %s" % vm.get_id()
+        print "boot1: %s" % (vm.os.boot[0].get_dev())
+        if len(vm.os.boot)==2:
+            print "boot2: %s" % (vm.os.boot[1].get_dev())
+        else:
+            print 'boot2: None'
+        for cdrom in vm.get_cdroms().list():
+            if cdrom.get_file():print "Cdrom: %s" % cdrom.get_file().get_id()
+        if vm.os.kernel or vm.os.initrd or vm.os.cmdline:
+            print "kernel: %s Initrd:%s Cmdline:%s" % (vm.os.kernel,vm.os.initrd,vm.os.cmdline)
+        print "status: %s" % vm.status.state
+        print "os: %s" % vm.get_os().get_type()
+        if vm.status.state=="up" or vm.status.state=="wait_for_launch" or vm.status.state=="powering_up":
+            host = findhostbyid(api,vm.get_host().get_id())
+            print "host: %s" % host
+        preferredhost = vm.get_placement_policy().get_host()
+        if preferredhost:
+            hostid = preferredhost.get_id()
+            print "preferred Host: %s" % api.hosts.get(id=hostid).get_name()
+        print "cpu: %s sockets:%s" % (vm.cpu.topology.cores,vm.cpu.topology.sockets)
+        if vm.status.state=="up":
+            for info in vm.get_statistics().list():
+                if info.get_description()=="CPU used by guest" or info.get_description()=="Memory used (agent)":
+                    for i in info.get_values().get_value():value=i.get_datum()
+                    print "%s: %s" % (info.get_description().lower(),value)
+        memory = vm.memory/1024/1024
+        print "memory: %dMb" % memory
+        for disk in vm.disks.list():
+            try:
+                size = disk.size/1024/1024/1024
+                diskid = disk.get_id()
+                for stor in api.disks.get(id=diskid).get_storage_domains().get_storage_domain():
+                    storid = stor.get_id()
+                    storname = api.storagedomains.get(id=storid).name
+                print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s active: %s storagedomain: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state(),disk.get_active(),storname)
+            except:
+                print "diskname: N/A"
+        for nic in vm.nics.list():
+	    if nic.network is not None:
+        	    net = api.networks.get(id=nic.network.id).get_name()
+	    else:
+		    net = 'N/A'
+            print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,net,nic.interface)
+        info = vm.get_guest_info()
+        if info != None and info.get_ips() != None:
+            ips = ''
+            for element in info.get_ips().get_ip():
+                ips = "%s %s" % (ips, element.get_address())
+            print "ips: %s" % (ips)
+        for tag in vm.get_tags().list():
+            print "tags: %s" % tag.get_name()
+        if vm.get_custom_properties():
+            for custom in vm.get_custom_properties().get_custom_property():
+                print "custom Property: %s Value: %s" % (custom.get_name(),custom.get_value())
+        sys.exit(0)
+
+    profiles=createprofiles(client)
 
 if listprofiles:
     print "Use one of the availables profiles:"
@@ -1614,4 +1616,3 @@ if not nolaunch:
                 continue
     print "VM %s started" % name
 
-sys.exit(0)
