@@ -18,7 +18,7 @@ from foreman import Foreman
 __author__ = "Karim Boumedhel"
 __credits__ = ["Karim Boumedhel"]
 __license__ = "GPL"
-__version__ = "1.1"
+__version__ = "1.2.1"
 __maintainer__ = "Karim Boumedhel"
 __email__ = "karim.boumedhel@gmail.com"
 __status__ = "Production"
@@ -798,7 +798,6 @@ if len(args) == 1 and not new:
             if kernel and initrd and cmdline:
                 action.vm = params.VM(os=params.OperatingSystem(kernel=kernel, initrd=initrd, cmdline=cmdline))
             if cloudinit:
-                hostname = params.Host(address=name)
                 gateway = None
                 if ip1 and profile:
                     profiles=createprofiles(client)
@@ -806,42 +805,21 @@ if len(args) == 1 and not new:
                     if profiles[profile].has_key('gateway'):
                         gateway = profiles[profile]['gateway']
                     ip = params.IP(address=ip1, netmask=subnet1, gateway=gateway)
-                    network=params.Network(ip=ip)
-                    nic = params.NIC(name='eth0', boot_protocol= 'STATIC', network=network, on_boot=True)
+		    nic = params.GuestNicConfiguration(name='eth0', boot_protocol= 'STATIC', ip=ip, on_boot=True)
                 else:
-                    nic = params.NIC(name='eth0', boot_protocol= 'DHCP', on_boot=True)
-                nics = params.Nics()
-                nics.add_nic(nic)
-                networkconfiguration = params.NetworkConfiguration(nics=nics)
-                users  = None
-                if rootpw:
-                    user = params.User(user_name='root', password=rootpw)
-                    users = params.Users()
-                    users.add_user(user)
-                if dns:    
-                    domainhost = params.Host(address=dns)
-                    domainhosts = params.Hosts()
-                    domainhosts.add_host(domainhost)
-                    dns = params.DNS(search_domains=domainhosts)
-                    if dns1:
-                        resolvhost = params.Host(address=dns1)
-                        resolvhosts = params.Hosts()
-                        resolvhosts.add_host(resolvhost)
-                        dns.set_servers(resolvhosts)
-                    networkconfiguration.set_dns(dns)
-                files = None
-                if filepath and filecontent:
-                    files = params.Files()
-                    cifile = params.File(name=filepath, content=filecontent, type_='PLAINTEXT')
-                    files = params.Files(file=[cifile])
+		    nic = params.GuestNicConfiguration(name='eth0', boot_protocol= 'DHCP', on_boot=True)
+		nic_configurations = params.GuestNicsConfiguration(nic_configuration=[nic])
+                #files = None
+                #if filepath and filecontent:
+                #    files = params.Files()
+                #    cifile = params.File(name=filepath, content=filecontent, type_='PLAINTEXT')
+                #    files = params.Files(file=[cifile])
                 authorized_keys = None
                 if profiles[profile].has_key('key'):
                         key = profiles[profile]['key']
-                        authorized_key = params.AuthorizedKey(user=params.User(user_name="root"), key=key)
-                        authorized_keys = params.AuthorizedKeys(authorized_key=[authorized_key])
-                cloudinit = params.CloudInit(host=hostname, network_configuration=networkconfiguration, regenerate_ssh_keys=True, users=users, files=files, authorized_keys =authorized_keys)
-                initialization = params.Initialization(cloud_init=cloudinit)
+		initialization=params.Initialization(regenerate_ssh_keys=True, host_name=name, domain=dns, user_name='root', root_password=rootpw, nic_configurations=nic_configurations, dns_servers=dns1, authorized_ssh_keys=key)
                 action.vm = params.VM(initialization=initialization)
+		action.use_cloud_init =True
             elif iso:
                 iso = checkiso(api, iso)
                 boot1 = params.Boot(dev="cdrom")
@@ -890,6 +868,7 @@ if len(args) == 1 and not new:
             sys.exit(0)
         api.vms.get(name).stop()
         print "VM %s stopped" % name
+        sys.exit(0)
     if migrate:
         if host:
             host = api.hosts.get(name=host)
