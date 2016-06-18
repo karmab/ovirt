@@ -18,7 +18,7 @@ from foreman import Foreman
 __author__ = "Karim Boumedhel"
 __credits__ = ["Karim Boumedhel"]
 __license__ = "GPL"
-__version__ = "1.2.1"
+__version__ = "1.2.3"
 __maintainer__ = "Karim Boumedhel"
 __email__ = "karim.boumedhel@gmail.com"
 __status__ = "Production"
@@ -792,7 +792,7 @@ if len(args) == 1 and not new:
         sys.exit(1)
     if runonce and not new:
         if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
-            print "VM allready started"
+            print "VM %s allready started" % (vm.name)
         else:
             action = params.Action()
             if kernel and initrd and cmdline:
@@ -1038,7 +1038,7 @@ if len(args) == 1 and not new:
         print "Disk %s with size %d GB added" % (diskname,adddisk/1024/1024/1024)
     if start:
         if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
-            print "VM allready started"
+            print "VM %s allready started" % (vm.name)
         else:
             if host:
                 hostname = host
@@ -1051,11 +1051,13 @@ if len(args) == 1 and not new:
             else:
                 api.vms.get(name).start()
                 print "VM %s started" % name
+        sys.exit(0)
     if reboot:
         if api.vms.get(name).status.state!="down":
             api.vms.get(name).stop()
         api.vms.get(name).start()
         print "VM %s rebooted" % name
+        sys.exit(0)
 #    if net:
 #        interface = 'eth0'
 #    nic = api.vms.get(name).nics.get(name=interface)
@@ -1152,6 +1154,7 @@ release-cursor=shift+f12""".format(address=address, port=port, ticket=ticket)
             host = findhostbyid(api,vm.get_host().get_id())
             print "host: %s" % host
         preferredhost = vm.get_placement_policy().get_host()
+	print "high availability: %s" % vm.get_high_availability().get_enabled()
         if preferredhost:
             hostid = preferredhost.get_id()
             print "preferred Host: %s" % api.hosts.get(id=hostid).get_name()
