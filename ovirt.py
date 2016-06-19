@@ -548,16 +548,17 @@ else:
 api = API(url=url, username=ouser, password=opassword, insecure=True, debug=debug)
 
 if listvms:
-    vms = PrettyTable(["Name", "Status", "Ips"])
+    vms = PrettyTable(["Name", "Status", "Fqdn", "Ips"])
     vms.align["Name"] = "l"
     for vm in api.vms.list():
         name, status = vm.get_name(), vm.status.state
         guestinfo = vm.get_guest_info()
+	fqdn = guestinfo.get_fqdn() if guestinfo !=None else ''
         ips = ''
 	if guestinfo !=None and guestinfo.get_ips() != None:
 		for element in guestinfo.get_ips().get_ip():
 			ips = "%s %s" % (ips, element.get_address())
-        vms.add_row([name, status, ips])
+        vms.add_row([name, status, fqdn, ips])
     print vms
     sys.exit(0)
 
@@ -1196,6 +1197,8 @@ release-cursor=shift+f12""".format(address=address, port=port, ticket=ticket)
             for element in info.get_ips().get_ip():
                 ips = "%s %s" % (ips, element.get_address())
             print "ips: %s" % (ips)
+	if info != None and info.get_fqdn() != None:
+	    print "fqdn: %s" % info.get_fqdn()
         for tag in vm.get_tags().list():
             print "tags: %s" % tag.get_name()
         if vm.get_custom_properties():
