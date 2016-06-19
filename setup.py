@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='ovirt',
-      version='1.2.3',
+      version='1.2.5',
       description='Ovirt utility',
       url='http://github.com/karmab/ovirt',
       author='Karim Boumedhel',
@@ -10,6 +10,7 @@ setup(name='ovirt',
       scripts=['ovirt.py','foreman.py'],
       install_requires=[
                 'pyparsing',
+		'pyYAML',
                 'ovirt-engine-sdk-python',
                 'prettytable',
                 'requests',

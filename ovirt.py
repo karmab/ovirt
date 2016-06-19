@@ -14,11 +14,14 @@ import ConfigParser
 from ovirtsdk.api import API
 from ovirtsdk.xml import params
 from foreman import Foreman
+from re import sub
+from yaml import dump, load
+
 
 __author__ = "Karim Boumedhel"
 __credits__ = ["Karim Boumedhel"]
 __license__ = "GPL"
-__version__ = "1.2.3"
+__version__ = "1.2.5"
 __maintainer__ = "Karim Boumedhel"
 __email__ = "karim.boumedhel@gmail.com"
 __status__ = "Production"
@@ -77,7 +80,7 @@ actiongroup.add_option('-Q', '--forcekill', dest='forcekill', action='store_true
 actiongroup.add_option('-5', '--template', dest='template', type="string", help='Deploy VM from template')
 actiongroup.add_option('-6', '--import', dest='importvm', type='string', help='Import specified VM')
 actiongroup.add_option('-7', "--runonce", dest='runonce', action="store_true", help='Runonce VM.you will need to pass kernel,initrd and cmdline')
-actiongroup.add_option('-8', '--cloudinit', dest='cloudinit', action='store_true', help='Use Cloudinit when launching VM.you will need to pass ip1, dns and dns1 and profile. name will be derived from the vm s name, subnet and gateway from your profile')
+actiongroup.add_option('-8', '--cloudinit', dest='cloudinit', action='store_true', help='Use Cloudinit when launching VM.you will need a cloudinit.yaml file in your current directory or a specific .yml with the name of your vm . ip1 can be overriden with -1 flag. Note hostname is ignored')
 actiongroup.add_option('--dns1', dest='dns1', type='string', help='dns server to use along with Cloudinit')
 actiongroup.add_option('--filepath', dest='filepath', type='string', help='file path to create along with Cloudinit')
 actiongroup.add_option('--filecontent', dest='filecontent', type='string', help='file content to create along with Cloudinit')
@@ -798,26 +801,31 @@ if len(args) == 1 and not new:
             if kernel and initrd and cmdline:
                 action.vm = params.VM(os=params.OperatingSystem(kernel=kernel, initrd=initrd, cmdline=cmdline))
             if cloudinit:
-                gateway = None
-                if ip1 and profile:
-                    profiles=createprofiles(client)
-                    subnet1 = profiles[profile]['subnet1']
-                    if profiles[profile].has_key('gateway'):
-                        gateway = profiles[profile]['gateway']
+	    	if os.path.exists("%s.yml" % name):
+		    cloudinitfile = ''
+		elif os.path.exists('cloudinit.yml'):
+		    cloudinitfile = ''
+		else:
+		    print "Missing cloudinit file %s.yml and default cloudinit.yml" % name
+		    sys.exit(0)
+	    	with open(cloudinitfile, 'r') as f:
+		    info = load(f)
+		    host_name = name
+		    if 'ip1' in info.keys() and ip1 is None:
+		    	ip1 = info['ip']
+		    subnet1 = info['netmask'] if 'netmask' in info.keys() else None
+		    gateway = info['gateway'] if 'gateway' in info.keys() else None
+		    authorized_ssh_keys = info['ssh_authorized_keys'] if 'ssh_authorized_keys' in info.keys() else None
+		    domain = info['dns'] if 'dns' in info.keys() else None
+		    root_password = info['password'] if 'password' in info.keys() else None
+		    custom_script = "runcmd:\n%s" % dump(info['runcmd'], default_flow_style=False) if 'runcmd' in info.keys() else None
+                if ip1 and subnet1 and gateway:
                     ip = params.IP(address=ip1, netmask=subnet1, gateway=gateway)
 		    nic = params.GuestNicConfiguration(name='eth0', boot_protocol= 'STATIC', ip=ip, on_boot=True)
                 else:
 		    nic = params.GuestNicConfiguration(name='eth0', boot_protocol= 'DHCP', on_boot=True)
 		nic_configurations = params.GuestNicsConfiguration(nic_configuration=[nic])
-                #files = None
-                #if filepath and filecontent:
-                #    files = params.Files()
-                #    cifile = params.File(name=filepath, content=filecontent, type_='PLAINTEXT')
-                #    files = params.Files(file=[cifile])
-                authorized_keys = None
-                if profiles[profile].has_key('key'):
-                        key = profiles[profile]['key']
-		initialization=params.Initialization(regenerate_ssh_keys=True, host_name=name, domain=dns, user_name='root', root_password=rootpw, nic_configurations=nic_configurations, dns_servers=dns1, authorized_ssh_keys=key)
+		initialization=params.Initialization(regenerate_ssh_keys=True, host_name=host_name, domain=domain, user_name='root', root_password=root_password, nic_configurations=nic_configurations, dns_servers=dns1, authorized_ssh_keys=authorized_ssh_keys, custom_script=custom_script)
                 action.vm = params.VM(initialization=initialization)
 		action.use_cloud_init =True
             elif iso:
@@ -1051,13 +1059,13 @@ if len(args) == 1 and not new:
             else:
                 api.vms.get(name).start()
                 print "VM %s started" % name
-        sys.exit(0)
+	sys.exit(0)
     if reboot:
         if api.vms.get(name).status.state!="down":
             api.vms.get(name).stop()
         api.vms.get(name).start()
         print "VM %s rebooted" % name
-        sys.exit(0)
+	sys.exit(0)
 #    if net:
 #        interface = 'eth0'
 #    nic = api.vms.get(name).nics.get(name=interface)
