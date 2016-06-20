@@ -773,7 +773,8 @@ if template:
                 nic.update()
                 print "Mac updated"
                 break
-    sys.exit(0)
+    if not cloudinit:
+    	sys.exit(0)
 
 if len(args) == 1 and not new:
     name = args[0]
@@ -803,9 +804,9 @@ if len(args) == 1 and not new:
                 action.vm = params.VM(os=params.OperatingSystem(kernel=kernel, initrd=initrd, cmdline=cmdline))
             if cloudinit:
 	    	if os.path.exists("%s.yml" % name):
-		    cloudinitfile = ''
+		    cloudinitfile = "%s.yml" % name
 		elif os.path.exists('cloudinit.yml'):
-		    cloudinitfile = ''
+		    cloudinitfile = 'cloudinit.yml'
 		else:
 		    print "Missing cloudinit file %s.yml and default cloudinit.yml" % name
 		    sys.exit(0)
@@ -816,10 +817,13 @@ if len(args) == 1 and not new:
 		    	ip1 = info['ip']
 		    subnet1 = info['netmask'] if 'netmask' in info.keys() else None
 		    gateway = info['gateway'] if 'gateway' in info.keys() else None
-		    authorized_ssh_keys = info['ssh_authorized_keys'] if 'ssh_authorized_keys' in info.keys() else None
-		    domain = info['dns'] if 'dns' in info.keys() else None
+		    authorized_ssh_keys = info['ssh_authorized_keys'][0] if 'ssh_authorized_keys' in info.keys() else None
+		    domain = info['domain'] if 'domain' in info.keys() else None
+		    dns1 = info['dns'][0] if 'dns' in info.keys() else None
 		    root_password = info['password'] if 'password' in info.keys() else None
 		    custom_script = "runcmd:\n%s" % dump(info['runcmd'], default_flow_style=False) if 'runcmd' in info.keys() else None
+		    if domain:
+		    	host_name = "%s.%s" % (name, domain)
                 if ip1 and subnet1 and gateway:
                     ip = params.IP(address=ip1, netmask=subnet1, gateway=gateway)
 		    nic = params.GuestNicConfiguration(name='eth0', boot_protocol= 'STATIC', ip=ip, on_boot=True)
@@ -867,6 +871,9 @@ if len(args) == 1 and not new:
                 sys.exit(1)
         if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up" or api.vms.get(name).status.state=="reboot_in_progress":
             api.vms.get(name).stop()
+	    while api.vms.get(name).status.state!="down":
+                print "Waiting for vm to stop"
+		time.sleep(5)
             print "VM %s stopped" % name
         api.vms.get(name).delete()
         print "VM %s killed" % name
