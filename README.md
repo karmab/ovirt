@@ -1,6 +1,7 @@
 ###ovirt.py repository
 
 [![Build Status](https://travis-ci.org/karmab/ovirt.svg?branch=master)](https://travis-ci.org/karmab/ovirt)
+[![Code Climate](https://codeclimate.com/github/karmab/ovirt/badges/gpa.svg)](https://codeclimate.com/github/karmab/ovirt)
 
 This script allows creation/stop/start/runonce/console/add disk or iso/migrate/deploy/listing from template/add tags,... for ovirt/rhev-m virtual machines ( plus creation in cobbler for pxe installs) in a multi-client way
 
