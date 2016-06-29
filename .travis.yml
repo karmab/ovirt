@@ -10,7 +10,9 @@ notifications:
 
 before_install:
     - pip install pep8
+    - pip install mispellings
 
 script:
     # Run pep8 on all .py files in all subfolders
-    - find . -name \*.py -exec pep8 --ignore=E501 {} +
+    - find . -name \*.py -exec pep8 --ignore=E501,E402 {} +
+    - find . -name '*.py' | misspellings -f -

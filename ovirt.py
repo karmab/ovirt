@@ -26,104 +26,176 @@ __maintainer__ = "Karim Boumedhel"
 __email__ = "karim.boumedhel@gmail.com"
 __status__ = "Production"
 
-ERR_NOOVIRTFILE = "You need to create a correct ovirt.ini file in your home directory.Check documentation"
-ERR_NOCOBBLERFILE = "You need to create a correct cobbler.ini file in your home directory.Check documentation"
-ERR_NOFOREMANFILE = "You need to create a correct foreman.ini file in your home directory.Check documentation"
+ERR_NOOVIRTFILE = "You need to create a correct ovirt.ini file in your home\
+                  directory.Check documentation"
+ERR_NOCOBBLERFILE = "You need to create a correct cobbler.ini file in your\
+                    home directory.Check documentation"
+ERR_NOFOREMANFILE = "You need to create a correct foreman.ini file in your\
+                    home directory.Check documentation"
 ERR_CLIENTNOTFOUND = "Client not found"
 ERR_CLIENTNOCONF = "Client not found in conf file"
-ERR_CLIENTNOPROFILE = "Missing client file in your home directory.Check documentation"
+ERR_CLIENTNOPROFILE = "Missing client file in your home directory.\
+                      Check documentation"
 
 usage = "script to create virtual machines on ovirt/rhev"
 version = "1.8"
-parser = optparse.OptionParser("Usage: %prog [options] vmname",version=version)
+parser = optparse.OptionParser(
+    "Usage: %prog [options] vmname", version=version)
 creationgroup = optparse.OptionGroup(parser, "Creation options")
-creationgroup.add_option("-b", "--bad", dest="bad",action="store_true", help="If set,treat all actions as not for a linux guest,meaning net interfaces will be of type e1000 and disk of type ide.Necessary for windows or solaris guests")
+creationgroup.add_option("-b", "--bad", dest="bad", action="store_true", help="If set,treat all actions as not for linux guest,meaning net interfaces will be of type e1000 and disk of type ide.Necessary for windows or solaris guests")
 creationgroup.add_option("-c", "--cpu", dest="numcpu", type="int", help="Specify Number of CPUS")
-creationgroup.add_option("-d", "--disk", dest="disksize2", metavar="DISKSIZE",type="int", help="Specify Disk size,in Go at VM creation")
-creationgroup.add_option("-e", "--extra", dest="extra", type="string", help="Extra parameters to add to cmdline")
-creationgroup.add_option("-f", "--diskformat", dest="diskformat", type="string", help="Specify Disk mode.Can be raw or cow")
-creationgroup.add_option("-m", "--memory", dest="memory2", metavar="MEMORY",type="int", help="Specify Memory, in Mo to override when creating or to set (when vm is down)")
-creationgroup.add_option("-n", "--new", dest="new",action="store_true", help="Create new VM")
-creationgroup.add_option("-p", "--profile", dest="profile",type="string", help="specify Profile")
-creationgroup.add_option('-t', '--thin', dest="thin", action="store_true", help="Use thin provisioning for disk")
-creationgroup.add_option("-D", "--storagedomain" , dest="storagedomain", type="string", help="Specify Storage Domain")
-creationgroup.add_option("-G", "--cluster", dest="clu", metavar="CLUSTER",type="string", help="Specify Cluster")
-creationgroup.add_option("-N", "--numinterfaces", dest="numinterfaces", type="int", help="Specify number of net interfaces")
-creationgroup.add_option("-Y", "--nolaunch", dest="nolaunch", action="store_true", help="Dont Launch VM,just create it")
-creationgroup.add_option('--mac1', dest="mac1", type="string", help="Specify mac to assign to first interface of vm when creating it or deploying from template.if a number is provided,only last octet of the mac will be set")
-creationgroup.add_option("--mac2", dest="mac2", type="string", help="Specify mac to assign to second interface of vm when creating it or deploying from template.")
+creationgroup.add_option("-d", "--disk", dest="disksize2", metavar="DISKSIZE", type="int", help="Specify Disk size,in Go at VM creation")
+creationgroup.add_option("-e", "--extra", dest="extra",
+                         type="string", help="Extra parameters to add to cmdline")
+creationgroup.add_option("-f", "--diskformat", dest="diskformat",
+                         type="string", help="Specify Disk mode.Can be raw or cow")
+creationgroup.add_option("-m", "--memory", dest="memory2", metavar="MEMORY", type="int",
+                         help="Specify Memory, in Mo to override when creating or to set (when vm is down)")
+creationgroup.add_option("-n", "--new", dest="new",
+                         action="store_true", help="Create new VM")
+creationgroup.add_option("-p", "--profile", dest="profile",
+                         type="string", help="specify Profile")
+creationgroup.add_option('-t', '--thin', dest="thin",
+                         action="store_true", help="Use thin provisioning for disk")
+creationgroup.add_option("-D", "--storagedomain", dest="storagedomain",
+                         type="string", help="Specify Storage Domain")
+creationgroup.add_option("-G", "--cluster", dest="clu",
+                         metavar="CLUSTER", type="string", help="Specify Cluster")
+creationgroup.add_option("-N", "--numinterfaces", dest="numinterfaces",
+                         type="int", help="Specify number of net interfaces")
+creationgroup.add_option("-Y", "--nolaunch", dest="nolaunch",
+                         action="store_true", help="Dont Launch VM,just create it")
+creationgroup.add_option('--mac1', dest="mac1", type="string",
+                         help="Specify mac to assign to first interface of vm when creating it or deploying from template.if a number is provided,only last octet of the mac will be set")
+creationgroup.add_option("--mac2", dest="mac2", type="string",
+                         help="Specify mac to assign to second interface of vm when creating it or deploying from template.")
 parser.add_option_group(creationgroup)
 
 actiongroup = optparse.OptionGroup(parser, "Action options")
-actiongroup.add_option("-a", "--adddisk", dest="adddisk", metavar="DISKSIZE",type="int", help="Specify Disk size,in Go to add")
-actiongroup.add_option("--deldisk", dest="deldisk", metavar="DISKNAME",type="string", help="Specify Disk name to delete")
-actiongroup.add_option("-g","--guestid", dest="guestid", type="string", help="Change guestid of VM")
-actiongroup.add_option("--iso", dest="iso", type="string", help="Specify iso to add to VM")
-actiongroup.add_option("-j", "--migrate", dest="migrate", action="store_true", help="Migrate VM")
-actiongroup.add_option("-k", "--host", dest="host", type="string", help="Host to use when migrating a VM")
-actiongroup.add_option("--net", dest="net", type="string", help="Change eth0 net of vm to specify one")
-actiongroup.add_option("-o", "--console", dest="console", action="store_true", help="Get a console")
-actiongroup.add_option("-P", "--preferred", dest="preferred", type="string", help="Set preferred host")
-actiongroup.add_option("-q", "--quit", dest="isoquit", action="store_true", help="Remove iso from VM")
-actiongroup.add_option("-r", "--reboot", dest="reboot", action="store_true", help="Restart vm")
-actiongroup.add_option("-s", "--start", dest="start", action="store_true", help="Start VM")
-actiongroup.add_option("--tags", dest="tags", type="string", help="Add tags to VM")
-actiongroup.add_option("-u", "--deletetag", dest="deletetag", type="string", help="Delete tag from VM")
-actiongroup.add_option("--reset", dest="reset", action="store_true", help="Reset kernel parameters for given VM")
-actiongroup.add_option("-w", "--stop", dest="stop", action="store_true", help="Stop VM")
-actiongroup.add_option("-x", "--kernel", dest="kernel", type="string", help="Specify kernel to boot VM")
-actiongroup.add_option("-y", "--initrd", dest="initrd", type="string", help="Specify initrd to boot VM")
-actiongroup.add_option("-z", "--cmdline", dest="cmdline", type="string", help="Specify cmdline to boot VM")
-actiongroup.add_option("-B", "--boot", dest="boot", type="string", help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom.If you only provivde one options, second boot option will be set to None")
-actiongroup.add_option("-K", "--kill", dest="kill", action="store_true" , help="specify VM to kill in virtual center.Confirmation will be asked unless -F/--forcekill flag is set.VM will also be killed in cobbler server if -Z/-cobbler flag set")
-actiongroup.add_option('-Q', '--forcekill', dest='forcekill', action='store_true', help='Dont ask confirmation when killing a VM')
-actiongroup.add_option('-5', '--template', dest='template', type="string", help='Deploy VM from template')
-actiongroup.add_option('-6', '--import', dest='importvm', type='string', help='Import specified VM')
-actiongroup.add_option('-7', "--runonce", dest='runonce', action="store_true", help='Runonce VM.you will need to pass kernel,initrd and cmdline')
-actiongroup.add_option('-8', '--cloudinit', dest='cloudinit', action='store_true', help='Use Cloudinit when launching VM.you will need a cloudinit.yaml file in your current directory or a specific .yml with the name of your vm . ip1 can be overriden with -1 flag. Note hostname is ignored')
-actiongroup.add_option('--dns1', dest='dns1', type='string', help='dns server to use along with Cloudinit')
-actiongroup.add_option('--filepath', dest='filepath', type='string', help='file path to create along with Cloudinit')
-actiongroup.add_option('--filecontent', dest='filecontent', type='string', help='file content to create along with Cloudinit')
+actiongroup.add_option("-a", "--adddisk", dest="adddisk", metavar="DISKSIZE",
+                       type="int", help="Specify Disk size,in Go to add")
+actiongroup.add_option("--deldisk", dest="deldisk", metavar="DISKNAME",
+                       type="string", help="Specify Disk name to delete")
+actiongroup.add_option("-g", "--guestid", dest="guestid",
+                       type="string", help="Change guestid of VM")
+actiongroup.add_option("--iso", dest="iso", type="string",
+                       help="Specify iso to add to VM")
+actiongroup.add_option("-j", "--migrate", dest="migrate",
+                       action="store_true", help="Migrate VM")
+actiongroup.add_option("-k", "--host", dest="host",
+                       type="string", help="Host to use when migrating a VM")
+actiongroup.add_option("--net", dest="net", type="string",
+                       help="Change eth0 net of vm to specify one")
+actiongroup.add_option("-o", "--console", dest="console",
+                       action="store_true", help="Get a console")
+actiongroup.add_option("-P", "--preferred", dest="preferred",
+                       type="string", help="Set preferred host")
+actiongroup.add_option("-q", "--quit", dest="isoquit",
+                       action="store_true", help="Remove iso from VM")
+actiongroup.add_option("-r", "--reboot", dest="reboot",
+                       action="store_true", help="Restart vm")
+actiongroup.add_option("-s", "--start", dest="start",
+                       action="store_true", help="Start VM")
+actiongroup.add_option("--tags", dest="tags",
+                       type="string", help="Add tags to VM")
+actiongroup.add_option("-u", "--deletetag", dest="deletetag",
+                       type="string", help="Delete tag from VM")
+actiongroup.add_option("--reset", dest="reset", action="store_true",
+                       help="Reset kernel parameters for given VM")
+actiongroup.add_option("-w", "--stop", dest="stop",
+                       action="store_true", help="Stop VM")
+actiongroup.add_option("-x", "--kernel", dest="kernel",
+                       type="string", help="Specify kernel to boot VM")
+actiongroup.add_option("-y", "--initrd", dest="initrd",
+                       type="string", help="Specify initrd to boot VM")
+actiongroup.add_option("-z", "--cmdline", dest="cmdline",
+                       type="string", help="Specify cmdline to boot VM")
+actiongroup.add_option("-B", "--boot", dest="boot", type="string",
+                       help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom.If you only provivde one options, second boot option will be set to None")
+actiongroup.add_option("-K", "--kill", dest="kill", action="store_true",
+                       help="specify VM to kill in virtual center.Confirmation will be asked unless -F/--forcekill flag is set.VM will also be killed in cobbler server if -Z/-cobbler flag set")
+actiongroup.add_option('-Q', '--forcekill', dest='forcekill',
+                       action='store_true', help='Dont ask confirmation when killing a VM')
+actiongroup.add_option('-5', '--template', dest='template',
+                       type="string", help='Deploy VM from template')
+actiongroup.add_option('-6', '--import', dest='importvm',
+                       type='string', help='Import specified VM')
+actiongroup.add_option('-7', "--runonce", dest='runonce', action="store_true",
+                       help='Runonce VM.you will need to pass kernel,initrd and cmdline')
+actiongroup.add_option('-8', '--cloudinit', dest='cloudinit', action='store_true',
+                       help='Use Cloudinit when launching VM.you will need a cloudinit.yaml file in your current directory or a specific .yml with the name of your vm . ip1 can be overriden with -1 flag. Note hostname is ignored')
+actiongroup.add_option('--dns1', dest='dns1', type='string',
+                       help='dns server to use along with Cloudinit')
+actiongroup.add_option('--filepath', dest='filepath', type='string',
+                       help='file path to create along with Cloudinit')
+actiongroup.add_option('--filecontent', dest='filecontent',
+                       type='string', help='file content to create along with Cloudinit')
 parser.add_option_group(actiongroup)
 
 listinggroup = optparse.OptionGroup(parser, 'Listing options')
-listinggroup.add_option("-i", "--info", dest="info", action="store_true", help="get VM info")
-listinggroup.add_option('-l', '--listprofiles', dest='listprofiles', action='store_true', help='list available profiles')
-listinggroup.add_option('-E', '--listexports', dest='listexports', action='store_true', help='List machines in export domain')
-listinggroup.add_option('-H', '--listhosts', dest='listhosts', action='store_true', help='List hosts')
-listinggroup.add_option('-I', '--listisos', dest='listisos', action='store_true', help='List isos')
-listinggroup.add_option('-L', '--listclients', dest="listclients", action='store_true', help='list available clients')
-listinggroup.add_option('-O', '--listtags', dest="listtags", action='store_true', help='List available tags')
-listinggroup.add_option('-T', '--listtemplates', dest='listtemplates', action='store_true', help='list available templates,')
-listinggroup.add_option('-V', '--listvms', dest='listvms', action='store_true', help='list all vms,along with their status and their ip')
+listinggroup.add_option("-i", "--info", dest="info",
+                        action="store_true", help="get VM info")
+listinggroup.add_option('-l', '--listprofiles', dest='listprofiles',
+                        action='store_true', help='list available profiles')
+listinggroup.add_option('-E', '--listexports', dest='listexports',
+                        action='store_true', help='List machines in export domain')
+listinggroup.add_option('-H', '--listhosts', dest='listhosts',
+                        action='store_true', help='List hosts')
+listinggroup.add_option('-I', '--listisos', dest='listisos',
+                        action='store_true', help='List isos')
+listinggroup.add_option('-L', '--listclients', dest="listclients",
+                        action='store_true', help='list available clients')
+listinggroup.add_option('-O', '--listtags', dest="listtags",
+                        action='store_true', help='List available tags')
+listinggroup.add_option('-T', '--listtemplates', dest='listtemplates',
+                        action='store_true', help='list available templates,')
+listinggroup.add_option('-V', '--listvms', dest='listvms', action='store_true',
+                        help='list all vms,along with their status and their ip')
 parser.add_option_group(listinggroup)
 
 cobblergroup = optparse.OptionGroup(parser, "Cobbler options")
-cobblergroup.add_option("-Z", "--cobbler", dest="cobbler", action="store_true", help="Cobbler support")
-cobblergroup.add_option("-1", "--ip1", dest="ip1", type="string", help="Specify First IP")
-cobblergroup.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
-cobblergroup.add_option("-3", "--ip3", dest="ip3", type="string", help="Specify Third IP")
-cobblergroup.add_option("-4", "--ip4", dest="ip4", type="string", help="Specify Fourth IP")
-cobblergroup.add_option("-J", "--dns", dest="dns", type="string", help="Dns domain")
+cobblergroup.add_option("-Z", "--cobbler", dest="cobbler",
+                        action="store_true", help="Cobbler support")
+cobblergroup.add_option("-1", "--ip1", dest="ip1",
+                        type="string", help="Specify First IP")
+cobblergroup.add_option("-2", "--ip2", dest="ip2",
+                        type="string", help="Specify Second IP")
+cobblergroup.add_option("-3", "--ip3", dest="ip3",
+                        type="string", help="Specify Third IP")
+cobblergroup.add_option("-4", "--ip4", dest="ip4",
+                        type="string", help="Specify Fourth IP")
+cobblergroup.add_option("-J", "--dns", dest="dns",
+                        type="string", help="Dns domain")
 parser.add_option_group(cobblergroup)
 
 foremangroup = optparse.OptionGroup(parser, "Foreman options")
-foremangroup.add_option("-F", "--foreman", dest="foreman", action="store_true", help="Foreman support")
-foremangroup.add_option("--hostgroup", dest="hostgroup", type="string", help="Foreman hostgroup")
-foremangroup.add_option("--puppetclasses", dest="puppetclasses", type="string", help="Puppet classes to add to host, separated by ,")
+foremangroup.add_option("-F", "--foreman", dest="foreman",
+                        action="store_true", help="Foreman support")
+foremangroup.add_option("--hostgroup", dest="hostgroup",
+                        type="string", help="Foreman hostgroup")
+foremangroup.add_option("--puppetclasses", dest="puppetclasses",
+                        type="string", help="Puppet classes to add to host, separated by ,")
 parser.add_option_group(foremangroup)
 
-parser.add_option('-v', '--debug', dest='debug', default=False, action='store_true', help='Debug')
-parser.add_option('--rootpw', dest='rootpw', type = 'string', help='Root password when using cloud-init')
-parser.add_option("-A", "--activate", dest="activate", type="string", help="Activate specified storageDomain")
-parser.add_option("-C", "--client", dest="client", type="string", help="Specify Client")
-parser.add_option("-M", "--maintenance", dest="maintenance", type="string", help="Put in maintenance specified storageDomain")
-parser.add_option("-S", "--summary", dest="summary", action="store_true", help="Summary of your ovirt setup")
-parser.add_option("-X", "--search" , dest="search", type="string", help="Search VMS")
-parser.add_option("-9", "--switchclient", dest="switchclient", type="string", help="Switch default client")
+parser.add_option('-v', '--debug', dest='debug',
+                  default=False, action='store_true', help='Debug')
+parser.add_option('--rootpw', dest='rootpw', type='string',
+                  help='Root password when using cloud-init')
+parser.add_option("-A", "--activate", dest="activate",
+                  type="string", help="Activate specified storageDomain")
+parser.add_option("-C", "--client", dest="client",
+                  type="string", help="Specify Client")
+parser.add_option("-M", "--maintenance", dest="maintenance",
+                  type="string", help="Put in maintenance specified storageDomain")
+parser.add_option("-S", "--summary", dest="summary",
+                  action="store_true", help="Summary of your ovirt setup")
+parser.add_option("-X", "--search", dest="search",
+                  type="string", help="Search VMS")
+parser.add_option("-9", "--switchclient", dest="switchclient",
+                  type="string", help="Switch default client")
 
-MB = 1024*1024
-GB = 1024*MB
+MB = 1024 * 1024
+GB = 1024 * MB
 (options, args) = parser.parse_args()
 staticroutes = None
 backuproutes = None
@@ -150,7 +222,7 @@ cobblermac = None
 diskformat = options.diskformat
 disksize2 = options.disksize2
 if disksize2:
-    disksize2 = disksize2*GB
+    disksize2 = disksize2 * GB
 ip1 = options.ip1
 ip2 = options.ip2
 ip3 = options.ip3
@@ -167,7 +239,7 @@ initrd = options.initrd
 cmdline = options.cmdline
 memory2 = options.memory2
 if options.memory2:
-    memory2 = options.memory2*MB
+    memory2 = options.memory2 * MB
 reboot = options.reboot
 start = options.start
 runonce = options.runonce
@@ -184,7 +256,7 @@ storagedomain = options.storagedomain
 deldisk = options.deldisk
 adddisk = options.adddisk
 if adddisk:
-    adddisk = adddisk*GB
+    adddisk = adddisk * GB
 bad = options.bad
 cobbler = options.cobbler
 foreman = options.foreman
@@ -196,7 +268,7 @@ listtags = options.listtags
 tags = options.tags
 deletetag = options.deletetag
 installnet = None
-boot1,boot2 = "hd","network"
+boot1, boot2 = "hd", "network"
 numinterfaces = options.numinterfaces
 iso = options.iso
 isoquit = options.isoquit
@@ -206,7 +278,7 @@ mac1 = options.mac1
 mac2 = options.mac2
 info = options.info
 macaddr = []
-low=None
+low = None
 guestrhel332 = "rhel_3"
 guestrhel364 = "rhel_3x64"
 guestrhel432 = "rhel_4"
@@ -224,14 +296,15 @@ guestwindows2003 = "windows_2003"
 guestwindows200364 = "windows_2003x64"
 guestwindows2008 = "windows_2008"
 guestwindows200864 = "windows_2008x64"
-foremanos,foremanenv,foremanarch,foremanpuppet,foremanptable = None, None, None, None, None
+foremanos, foremanenv, foremanarch, foremanpuppet, foremanptable = None, None, None, None, None
 hostgroup = options.hostgroup
 puppetclasses = options.puppetclasses
 rootpw = options.rootpw
 net = options.net
 
+
 def createprofiles(client):
-    clientfile = "%s/%s.ini" % (os.environ['HOME'],client)
+    clientfile = "%s/%s.ini" % (os.environ['HOME'], client)
     if not os.path.exists(clientfile):
         print "You need to create a %s.ini in your homedirectory.Check documentation" % client
         sys.exit(1)
@@ -240,32 +313,36 @@ def createprofiles(client):
         c.read(clientfile)
         profiles = {}
         for prof in c.sections():
-            for option in  c.options(prof):
-                if not profiles.has_key(prof):
-                    profiles[prof]={option : c.get(prof,option)}
+            for option in c.options(prof):
+                if prof not in profiles.keys():
+                    profiles[prof] = {option: c.get(prof, option)}
                 else:
-                    profiles[prof][option] = c.get(prof,option)
+                    profiles[prof][option] = c.get(prof, option)
         return profiles
     except:
         print ERR_CLIENTNOPROFILE
 
+
 def findhostbyid(api, id):
     hosts = api.hosts
     for h in hosts.list():
-        if h.get_id()==id:
+        if h.get_id() == id:
             return h.get_name()
+
 
 def findclubyid(api, id):
     clusters = api.clusters
     for clu in clusters.list():
-        if clu.get_id()==id:
+        if clu.get_id() == id:
             return clu.get_name()
+
 
 def getip(api, id):
     hosts = api.hosts
     for h in hosts.list():
-        if h.get_id()==id:
+        if h.get_id() == id:
             return h.get_address()
+
 
 def switchstoragedomain(api, storagedomain, activate=True):
     action = False
@@ -278,26 +355,27 @@ def switchstoragedomain(api, storagedomain, activate=True):
         for ds in api.datacenters.list():
             for s in ds.storagedomains.list():
                 if activate:
-                    if s.get_status().get_state()!="active" and s.get_id()==id:
+                    if s.get_status().get_state() != "active" and s.get_id() == id:
                         s.activate()
                         print "StorageDomain %s activated" % (storagedomain)
                         action = True
                 if not activate:
-                    if s.get_status().get_state()=="active" and s.get_id()==id:
+                    if s.get_status().get_state() == "active" and s.get_id() == id:
                         s.deactivate()
                         print "StorageDomain %s put in maintenance" % (storagedomain)
                         action = True
     if not action:
         print "No actions needed..."
 
+
 def checkiso(api, iso=None):
     isodomains = []
     datacenters = api.datacenters.list()
     for ds in datacenters:
         for sd in ds.storagedomains.list():
-            if sd.get_type()=="iso" and sd.get_status().get_state()=="active":
+            if sd.get_type() == "iso" and sd.get_status().get_state() == "active":
                 isodomains.append(sd)
-    if len(isodomains)==0:
+    if len(isodomains) == 0:
         print "No iso domain found.Leaving..."
         sys.exit(1)
     for sd in isodomains:
@@ -310,7 +388,7 @@ def checkiso(api, iso=None):
         for f in sdfiles.list():
             if not iso:
                 print f.get_id()
-            elif f.get_id()==iso:
+            elif f.get_id() == iso:
                 return f
 
     sys.exit(0)
@@ -323,12 +401,12 @@ if bad:
 else:
     diskinterface, netinterface = 'virtio', 'virtio'
 
-if len(args)!=1 and new:
+if len(args) != 1 and new:
     print "Usage: %prog [options] vmname"
     sys.exit(1)
 
-ovirtconffile = "%s/ovirt.ini" %(os.environ['HOME'])
-#parse ovirt client auth file
+ovirtconffile = "%s/ovirt.ini" % (os.environ['HOME'])
+# parse ovirt client auth file
 if not os.path.exists(ovirtconffile):
     print "Missing %s in your  home directory.Check documentation" % ovirtconffile
     sys.exit(1)
@@ -338,28 +416,28 @@ try:
     ovirts = {}
     default = {}
     for cli in c.sections():
-        for option in  c.options(cli):
-            if cli=="default":
-                default[option] = c.get(cli,option)
+        for option in c.options(cli):
+            if cli == "default":
+                default[option] = c.get(cli, option)
                 continue
-            if not ovirts.has_key(cli):
-                ovirts[cli] = {option : c.get(cli,option)}
+            if cli not in ovirts.keys():
+                ovirts[cli] = {option: c.get(cli, option)}
             else:
-                ovirts[cli][option] = c.get(cli,option)
+                ovirts[cli][option] = c.get(cli, option)
 except:
     print ERR_NOOVIRTFILE
     os._exit(1)
 
 if listclients:
-    clientstable = PrettyTable(["Name","Current"])
+    clientstable = PrettyTable(["Name", "Current"])
     clientstable.align["Name"] = "l"
-    for cli in  sorted(ovirts):
+    for cli in sorted(ovirts):
         clientsinfo = [cli]
-    	if default.has_key("client") and default['client'] == cli:
-		clientsinfo.append('X')
-	else:
-		clientsinfo.append('')
-	clientstable.add_row(clientsinfo)
+        if 'client' in default.keys() and default['client'] == cli:
+            clientsinfo.append('X')
+        else:
+            clientsinfo.append('')
+        clientstable.add_row(clientsinfo)
     print clientstable
     sys.exit(0)
 
@@ -385,77 +463,75 @@ if not client:
         print "No client defined as default in your ini file or specified in command line"
         os._exit(1)
 
-#PARSE DEFAULT SECTION
+# PARSE DEFAULT SECTION
 try:
-    if not clu and default.has_key("clu"):
+    if not clu and 'clu' in default.keys():
         clu = default["clu"]
-    if not numcpu and default.has_key("numcpu"):
-        numcpu = int(default["numcpu"])
-    if not diskformat and default.has_key("diskformat"):
-        diskformat = default["diskformat"]
-    if default.has_key("disksize"):
-        disksize = int(default["disksize"])*GB
-    if default.has_key("memory"):
-        memory = int(default["memory"])*MB
-    if default.has_key("low"):
-        low = float(default["low"])
-    if not storagedomain and default.has_key("storagedomain"):
+    if not numcpu and 'numcpu' in default.keys():
+        numcpu = int(default['numcpu'])
+    if not diskformat and 'diskformat' in default.keys():
+        diskformat = default['diskformat']
+    if 'disksize' in default.keys():
+        disksize = int(default['disksize']) * GB
+    if 'memory' in default.keys():
+        memory = int(default['memory']) * MB
+    if 'low' in default.keys():
+        low = float(default['low'])
+    if not storagedomain and 'storagedomain' in default.keys():
         storagedomain = default["storagedomain"]
-    if not numinterfaces and default.has_key("numinterfaces"):
+    if not numinterfaces and 'numinterfaces' in default.keys():
         numinterfaces = int(default["numinterfaces"])
-    if not ossl and default.has_key("ssl"):
+    if not ossl and 'ssl' in default.keys():
         ossl = True
 except:
     print "Problem parsing default section in your ini file"
     os._exit(1)
 
 try:
-    ohost = ovirts[client]["host"]
-    oport = ovirts[client]["port"]
-    ouser = ovirts[client]["user"]
-    opassword = ovirts[client]["password"]
-    if ovirts[client].has_key("ssl"):
-        ossl = ovirts[client]["ssl"]
-    if ovirts[client].has_key("clu"):
-        clu = ovirts[client]["clu"]
-    if not numcpu and ovirts[client].has_key("numcpu"):
-        numcpu = int(ovirts[client]["numcpu"])
-    if ovirts[client].has_key("diskformat"):
-        diskformat = ovirts[client]["diskformat"]
-    if ovirts[client].has_key("diskinterface"):
-        diskinterface = ovirts[client]["diskformat"]
-    if ovirts[client].has_key("disksize"):
-        disksize = int(ovirts[client]["disksize"])*GB
-    if ovirts[client].has_key("memory"):
-        memory = int(ovirts[client]["memory"])*MB
-    if not storagedomain and ovirts[client].has_key("storagedomain"):
-        storagedomain = ovirts[client]["storagedomain"]
-    if not low and ovirts[client].has_key("low"):
-        storagedomain = float(ovirts[client]["low"])
-    if ovirts[client].has_key("numinterfaces"):
-        numinterfaces = int(ovirts[client]["numinterfaces"])
-    if ovirts[client].has_key("netinterface"):
-        diskinterface = ovirts[client]["netinterface"]
-    if ovirts[client].has_key("ssl"):
+    ohost = ovirts[client]['host']
+    oport = ovirts[client]['port']
+    ouser = ovirts[client]['user']
+    opassword = ovirts[client]['password']
+    if 'ssl' in ovirts[client].keys():
+        ossl = ovirts[client]['ssl']
+    if 'clu' in ovirts[client].keys():
+        clu = ovirts[client]['clu']
+    if not numcpu and 'numcpu' in ovirts[client].keys():
+        numcpu = int(ovirts[client]['numcpu'])
+    if 'diskformat' in ovirts[client].keys():
+        diskformat = ovirts[client]['diskformat']
+    if 'diskinferface' in ovirts[client].keys():
+        diskinterface = ovirts[client]['diskformat']
+    if 'disksize' in ovirts[client].keys():
+        disksize = int(ovirts[client]['disksize']) * GB
+    if 'memory' in ovirts[client].keys():
+        memory = int(ovirts[client]['memory']) * MB
+    if not storagedomain and 'storagedomain' in ovirts[client].keys():
+        storagedomain = ovirts[client]['storagedomain']
+    if not low and 'low' in ovirts[client].keys():
+        storagedomain = float(ovirts[client]['low'])
+    if 'numinterfaces' in ovirts[client].keys():
+        numinterfaces = int(ovirts[client]['numinterfaces'])
+    if 'netinterface' in ovirts[client].keys():
+        diskinterface = ovirts[client]['netinterface']
+    if 'ssl' in ovirts[client].keys():
         ossl = True
-    if ovirts[client].has_key("ca"):
-        oca = ovirts[client]["ca"]
-    if ovirts[client].has_key("org"):
-        oorg = ovirts[client]["org"]
-    if ovirts[client].has_key("proxy"):
-        oproxy = ovirts[client]["proxy"]
-    #if ovirts[client].has_key("runonce"):
-    #  runonce=True
-except KeyError,e:
+    if 'ca' in ovirts[client].keys():
+        oca = ovirts[client]['ca']
+    if 'org' in ovirts[client].keys():
+        oorg = ovirts[client]['org']
+    if 'proxy' in ovirts[client].keys():
+        oproxy = ovirts[client]['proxy']
+except KeyError, e:
     print "Problem parsing ovirt ini file:Missing parameter %s" % e
     os._exit(1)
 
-#TODO:check necessary parameters exist for a valid ovirt connection or exits
-#if not ohost or not oport or not ouser or not opassword or not ossl or not clu or not numcpu or not diskformat or not disksize or not memory or not storagedomain or not numinterfaces:
+# TODO:check necessary parameters exist for a valid ovirt connection or exits
+# if not ohost or not oport or not ouser or not opassword or not ossl or not clu or not numcpu or not diskformat or not disksize or not memory or not storagedomain or not numinterfaces:
 # print "Missing parameters for ovirt"
 # sys.exit(1)
 
-#parse cobbler client auth file
+# parse cobbler client auth file
 if cobbler and client:
     cobblerconffile = "%s/cobbler.ini" % (os.environ['HOME'])
     if not os.path.exists(cobblerconffile):
@@ -466,24 +542,24 @@ if cobbler and client:
         c.read(cobblerconffile)
         cobblers = {}
         for cli in c.sections():
-            for option in  c.options(cli):
-                if not cobblers.has_key(cli):
-                    cobblers[cli] = {option : c.get(cli,option)}
+            for option in c.options(cli):
+                if cli not in cobblers.keys():
+                    cobblers[cli] = {option: c.get(cli, option)}
                 else:
-                    cobblers[cli][option]=c.get(cli,option)
+                    cobblers[cli][option] = c.get(cli, option)
         cobblerhost = cobblers[client]['host']
         cobbleruser = cobblers[client]['user']
         cobblerpassword = cobblers[client]['password']
-        if cobblers[client].has_key('mac'):
+        if 'mac' in cobblers[client].keys():
             cobblermac = cobblers[client]['mac']
-        if not dns and cobblers[client].has_key('dns'):
+        if not dns and 'dns' in cobblers[client].keys():
             dns = cobblers[client]['dns']
     except:
         print ERR_NOCOBBLERFILE
         print "Client:%s" % client
         os._exit(1)
 
-#parse foreman client auth file
+# parse foreman client auth file
 if foreman and client:
     foremanconffile = "%s/foreman.ini" % (os.environ['HOME'])
     if not os.path.exists(foremanconffile):
@@ -494,46 +570,48 @@ if foreman and client:
         c.read(foremanconffile)
         foremans = {}
         for cli in c.sections():
-            for option in  c.options(cli):
-                if not foremans.has_key(cli):
-                    foremans[cli] = {option : c.get(cli,option)}
+            for option in c.options(cli):
+                if cli not in foremans.keys():
+                    foremans[cli] = {option: c.get(cli, option)}
                 else:
-                    foremans[cli][option] = c.get(cli,option)
-        foremanhost     = foremans[client]['host']
-        foremanport     = foremans[client]['port']
-        if foremans[client].has_key('secure'):
-	    try:
-            	foremansecure = simplejson.loads(foremans[client]['secure'].lower())
-	    except:
-		foremansecure = false
-	else:
+                    foremans[cli][option] = c.get(cli, option)
+        foremanhost = foremans[client]['host']
+        foremanport = foremans[client]['port']
+        if 'secure' in foremans[client].keys():
+            try:
+                foremansecure = simplejson.loads(
+                    foremans[client]['secure'].lower())
+            except:
+                foremansecure = false
+        else:
             foremansecure = False
-        if foremans[client].has_key('build'):
-	    try:
-            	foremanbuild = simplejson.loads(foremans[client]['build'].lower())
-	    except:
-		foremanbuild = false
-	else:
+        if 'build' in foremans[client].keys():
+            try:
+                foremanbuild = simplejson.loads(
+                    foremans[client]['build'].lower())
+            except:
+                foremanbuild = false
+        else:
             foremansecure = False
-        if foremans[client].has_key('user'):
+        if 'user' in foremans[client].keys():
             foremanuser = foremans[client]['user']
-        if foremans[client].has_key('password'):
+        if 'password' in foremans[client].keys():
             foremanpassword = foremans[client]['password']
-        if foremans[client].has_key('mac'):
+        if 'mac' in foremans[client].keys():
             foremanmac = foremans[client]['mac']
-        if foremans[client].has_key('os'):
+        if 'os' in foremans[client].keys():
             foremanos = foremans[client]['os']
-        if foremans[client].has_key('env'):
-            foremanenv=foremans[client]['env']
-        if foremans[client].has_key('arch'):
+        if 'env' in foremans[client].keys():
+            foremanenv = foremans[client]['env']
+        if 'arch' in foremans[client].keys():
             foremanarch = foremans[client]['arch']
-        if foremans[client].has_key('puppet'):
+        if 'puppet' in foremans[client].keys():
             foremanpuppet = foremans[client]['puppet']
-        if foremans[client].has_key('ptable'):
+        if 'ptable' in foremans[client].keys():
             foremanptable = foremans[client]['ptable']
-        if not dns and foremans[client].has_key('dns'):
+        if not dns and 'dns' in foremans[client].keys():
             dns = foremans[client]['dns']
-    except KeyError,e:
+    except KeyError, e:
         print "Problem parsing foreman ini file:Missing parameter %s" % e
         print "Client:%s" % client
         os._exit(1)
@@ -541,11 +619,11 @@ if foreman and client:
 
 if ossl:
     url = "https://%s:%s/api" % (ohost, oport)
-    #api = API(url=url, username=ouser, password=opassword, ca_file=ossl)
 else:
     url = "http://%s:%s/api" % (ohost, oport)
 
-api = API(url=url, username=ouser, password=opassword, insecure=True, debug=debug)
+api = API(url=url, username=ouser, password=opassword,
+          insecure=True, debug=debug)
 
 if listvms:
     vms = PrettyTable(["Name", "Status", "Fqdn", "Ips"])
@@ -553,11 +631,11 @@ if listvms:
     for vm in api.vms.list():
         name, status = vm.get_name(), vm.status.state
         guestinfo = vm.get_guest_info()
-	fqdn = guestinfo.get_fqdn() if guestinfo !=None else ''
+        fqdn = guestinfo.get_fqdn() if guestinfo is not None else ''
         ips = ''
-	if guestinfo !=None and guestinfo.get_ips() != None:
-		for element in guestinfo.get_ips().get_ip():
-			ips = "%s %s" % (ips, element.get_address())
+        if guestinfo is not None and guestinfo.get_ips() is not None:
+            for element in guestinfo.get_ips().get_ip():
+                ips = "%s %s" % (ips, element.get_address())
         vms.add_row([name, status, fqdn, ips])
     print vms
     sys.exit(0)
@@ -567,7 +645,7 @@ if listtemplates:
     templates.align["Name"] = "l"
     for t in api.templates.list():
         if t.status.get_state() == 'ok':
-		templates.add_row([t.get_name(),t.get_description()])
+            templates.add_row([t.get_name(), t.get_description()])
     print templates
     sys.exit(0)
 
@@ -578,7 +656,7 @@ if listisos:
 if listtags:
     tagstable = PrettyTable(["Name"])
     tagstable.align["Name"] = "l"
-    for tag  in api.tags.list():
+    for tag in api.tags.list():
         tagstable.add_row([tag.get_name()])
     print tagstable
     sys.exit(0)
@@ -591,27 +669,28 @@ if maintenance:
     switchstoragedomain(api, maintenance, False)
     sys.exit(0)
 
-#LIST HOSTS
+# LIST HOSTS
 if listhosts:
-    hoststable = PrettyTable(["Name", "Cluster", "Ip","Vms"])
+    hoststable = PrettyTable(["Name", "Cluster", "Ip", "Vms"])
     hoststable.align["Name"] = "l"
-    #create a dict hostid->vms
-    hosts={}
+    # create a dict hostid->vms
+    hosts = {}
     for vm in api.vms.list():
-        if vm.get_host() != None:
+        if vm.get_host() is not None:
             name, hostid = vm.get_name(), vm.get_host().get_id()
-            if hosts.has_key(hostid):
-		hosts[hostid].append(name)
+            if hostid in hosts.keys():
+                hosts[hostid].append(name)
             else:
-		hosts[hostid] = [name]
+                hosts[hostid] = [name]
     for h in api.hosts.list():
-        hostinfo = [h.get_name(),findclubyid(api,h.get_cluster().get_id()),h.get_address()]
+        hostinfo = [h.get_name(), findclubyid(
+            api, h.get_cluster().get_id()), h.get_address()]
         hostid = h.get_id()
-        if hosts.has_key(hostid):
+        if hostid in hosts.keys():
             hostinfo.append(",".join(hosts[hostid]))
-	else:
-	    hostinfo.append(None)
-	hoststable.add_row(hostinfo)
+        else:
+            hostinfo.append(None)
+        hoststable.add_row(hostinfo)
     print hoststable
     sys.exit(0)
 
@@ -619,40 +698,42 @@ if listexports:
     exportstable = PrettyTable(["Name", "Vms", "Templates"])
     exportstable.align["Name"] = "l"
     for sd in api.storagedomains.list():
-        if sd.get_type()=="export":
+        if sd.get_type() == "export":
             exportdomain = sd.get_name()
-            exportinfo   = [exportdomain] 
+            exportinfo = [exportdomain]
             vmslist = ''
             for vm in api.storagedomains.get(name=exportdomain).vms.list():
                 if vmslist == '':
-			vmslist = vm.name
+                    vmslist = vm.name
                 else:
-                	vmslist = "%s,%s" % (vmslist,vm.name)
-	    exportinfo.append(vmslist)
+                    vmslist = "%s,%s" % (vmslist, vm.name)
+            exportinfo.append(vmslist)
             templateslist = ''
             for template in api.storagedomains.get(name=exportdomain).templates.list():
-		if templateslist == '':
-			templateslist = template.name
-		else:    
-			templateslist = "%s,%s" % (templateslist,template.name)
-	    exportinfo.append(templateslist)
-	    exportstable.add_row(exportinfo)
+                if templateslist == '':
+                    templateslist = template.name
+                else:
+                    templateslist = "%s,%s" % (templateslist, template.name)
+            exportinfo.append(templateslist)
+            exportstable.add_row(exportinfo)
     print exportstable
     sys.exit(0)
 
-#SEARCH VMS
+# SEARCH VMS
 if search:
     vms = api.vms.list()
     vmfound = False
     for vm in vms:
-        if search.replace("*","").upper() in vm.name.upper():
-            if not vmfound:print "Vms found:"
+        if search.replace("*", "").upper() in vm.name.upper():
+            if not vmfound:
+                print "Vms found:"
             print vm.name
             vmfound = True
-    if not vmfound:print "No matching vms found"
+    if not vmfound:
+        print "No matching vms found"
     sys.exit(0)
 
-#REPORT
+# REPORT
 if summary:
     nodcs = []
     clusters = api.clusters.list()
@@ -661,44 +742,47 @@ if summary:
     hosts = api.hosts.list()
     for ds in datacenters:
         print "Datacenter: %s Type: %s Status: %s" % (ds.name, ds.storage_type, ds.get_status().get_state())
-        for s in ds.storagedomains.list():#stor.get_status().get_state()
-            if s.get_status().get_state()=="active":
-                used = s.get_used()/1024/1024/1024
-                available = s.get_available()/1024/1024/1024
-                print "Storage: %s Id: %s Type: %s Status: %s Total space: %sGb Available space:%sGb" % (s.name, s.get_id(), s.get_type(), s.get_status().get_state(), used+available, available)
+        for s in ds.storagedomains.list():  # stor.get_status().get_state()
+            if s.get_status().get_state() == "active":
+                used = s.get_used() / 1024 / 1024 / 1024
+                available = s.get_available() / 1024 / 1024 / 1024
+                print "Storage: %s Id: %s Type: %s Status: %s Total space: %sGb Available space:%sGb" % (s.name, s.get_id(), s.get_type(), s.get_status().get_state(), used + available, available)
             else:
                 print "Storage: %s Id: %s Type: %s Status: %s Total space: N/A Available space:N/A" % (s.name, s.get_id(), s.get_type(), s.get_status().get_state())
-        for clu  in clusters:
+        for clu in clusters:
             if not clu.get_data_center():
-                if clu not in nodcs:nodcs.append(clu)
+                if clu not in nodcs:
+                    nodcs.append(clu)
                 continue
-            cludc = api.datacenters.get(id=clu.get_data_center().get_id()).get_name()
-            if cludc != ds.get_name():continue
+            cludc = api.datacenters.get(
+                id=clu.get_data_center().get_id()).get_name()
+            if cludc != ds.get_name():
+                continue
             print "Cluster: %s Id: %s" % (clu.name, clu.id)
             for net in clu.networks.list():
-		vlan = net.get_vlan()
-		if vlan:
-			vlanid = vlan.get_id()
-		else:
-			vlanid = ''
-                if net.get_display():
-                    print "Network: %s  (Set as display network) Id: %s Vlan: %s" % (net.name,net.id, vlanid)
+                vlan = net.get_vlan()
+                if vlan:
+                    vlanid = vlan.get_id()
                 else:
-                    print "Network: %s Id: %s Vlan: %s" % (net.name,net.id, vlanid)
+                    vlanid = ''
+                if net.get_display():
+                    print "Network: %s  (Set as display network) Id: %s Vlan: %s" % (net.name, net.id, vlanid)
+                else:
+                    print "Network: %s Id: %s Vlan: %s" % (net.name, net.id, vlanid)
             for h in hosts:
                 spm = h.get_storage_manager().get_valueOf_()
-                if spm=="true":
+                if spm == "true":
                     spm = "SPM"
                 else:
                     spm = ""
                 cluh = api.clusters.get(id=h.get_cluster().get_id()).get_name()
                 if cluh == clu.name:
-			print "Host: %s Cpu: %s %s" % (h.name,h.cpu.name,spm)
-			#print h.get_memory()
-		
+                    print "Host: %s Cpu: %s %s" % (h.name, h.cpu.name, spm)
+                    # print h.get_memory()
+
         print "\n"
-    #handles clusters with no associated DC
-    if len(nodcs)>0:
+    # handles clusters with no associated DC
+    if len(nodcs) > 0:
         print "Datacenter: N/A"
         for clu in nodcs:
             print "Cluster: %s" % (clu.name)
@@ -714,21 +798,21 @@ if summary:
     sys.exit(0)
 
 if importvm:
-    vmfound= False
+    vmfound = False
     templatefound = False
     for sd in api.storagedomains.list():
-        if vmfound==True:
+        if vmfound is True:
             break
-        if sd.get_type()=="export":
-            exportdomain=sd.get_name()
+        if sd.get_type() == "export":
+            exportdomain = sd.get_name()
             for vm in api.storagedomains.get(name=exportdomain).vms.list():
-                if vm.name==importvm:
+                if vm.name == importvm:
                     exportdomainname = exportdomain
                     exportdomain = sd
                     vmfound = True
                     break
             for vm in api.storagedomains.get(name=exportdomain).templates.list():
-                if vm.name==importvm:
+                if vm.name == importvm:
                     exportdomainname = exportdomain
                     exportdomain = sd
                     templatefound = True
@@ -738,9 +822,11 @@ if importvm:
         sys.exit(1)
     print "vm %s imported from storagedomain %s to cluster %s and storagedomain %s" % (importvm, exportdomainname, clu, storagedomain)
     if vmfound:
-        exportdomain.vms.get(importvm).import_vm(params.Action(storage_domain=api.storagedomains.get(storagedomain), cluster=api.clusters.get(name=clu)))
+        exportdomain.vms.get(importvm).import_vm(params.Action(
+            storage_domain=api.storagedomains.get(storagedomain), cluster=api.clusters.get(name=clu)))
     if templatefound:
-        exportdomain.templates.get(importvm).import_template(params.Action(storage_domain=api.storagedomains.get(storagedomain), cluster=api.clusters.get(name=clu)))
+        exportdomain.templates.get(importvm).import_template(params.Action(
+            storage_domain=api.storagedomains.get(storagedomain), cluster=api.clusters.get(name=clu)))
     sys.exit(0)
 
 if template:
@@ -753,113 +839,130 @@ if template:
         print "Existing templates:"
         templates = api.templates.list()
         for temp in templates:
-            if temp.get_name()!="Blank":
+            if temp.get_name() != "Blank":
                 print "%s" % (temp.get_name())
         sys.exit(0)
     else:
         name = args[0]
         clu = temp.get_cluster()
-        api.vms.add(params.VM(name=name,cluster=clu,template=temp))
-	for disk in api.vms.get(name=name).disks.list():
-		diskid = disk.get_id()
-		while api.disks.get(id=diskid).get_status().get_state() != "ok":
-			print "Waiting for disk to be available..."
-			time.sleep(5)
-        print "VM %s deployed from %s" % (name,template)
+        api.vms.add(params.VM(name=name, cluster=clu, template=temp))
+        for disk in api.vms.get(name=name).disks.list():
+            diskid = disk.get_id()
+            while api.disks.get(id=diskid).get_status().get_state() != "ok":
+                print "Waiting for disk to be available..."
+                time.sleep(5)
+        print "VM %s deployed from %s" % (name, template)
         if mac1:
-            while api.vms.get(name).status.state!="down":
+            while api.vms.get(name).status.state != "down":
                 print "Waiting for VM to be down to upgrade mac..."
                 time.sleep(5)
             for nic in api.vms.get(name).nics.list():
-                if not ":" in mac1:mac1="%s%s" % (nic.mac.address[:-2],mac1)
+                if ':' not in mac1:
+                    mac1 = "%s%s" % (nic.mac.address[:-2], mac1)
                 nic.mac.address = mac1
                 nic.update()
                 print "Mac updated"
                 break
     if not cloudinit:
-    	sys.exit(0)
+        sys.exit(0)
 
 if len(args) == 1 and not new:
     name = args[0]
-    vm  =api.vms.get(name=name)
+    vm = api.vms.get(name=name)
     if kill and foreman:
-	f = Foreman(foremanhost,foremanport,foremanuser, foremanpassword,foremansecure)
+        f = Foreman(foremanhost, foremanport, foremanuser,
+                    foremanpassword, foremansecure)
         f.delete(name, dns)
     if kill and cobbler:
         s = xmlrpclib.Server("http://%s/cobbler_api" % cobblerhost)
-        token = s.login(cobbleruser,cobblerpassword)
-        system = s.find_system({"name":name})
-        if system==[]:
+        token = s.login(cobbleruser, cobblerpassword)
+        system = s.find_system({"name": name})
+        if system == []:
             print "Nothing to do in cobbler"
         else:
-            s.remove_system(name,token)
+            s.remove_system(name, token)
             s.sync(token)
-            print "%s sucessfully killed in %s" % (name, cobblerhost)
+            print "%s successfully killed in %s" % (name, cobblerhost)
     if not vm:
         print "Vm %s not found in %s" % (name, client)
         sys.exit(1)
     if runonce and not new:
-        if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
-            print "VM %s allready started" % (vm.name)
+        if api.vms.get(name).status.state == "up" or api.vms.get(name).status.state == "powering_up":
+            print "VM %s already started" % (vm.name)
         else:
             action = params.Action()
             if kernel and initrd and cmdline:
-                action.vm = params.VM(os=params.OperatingSystem(kernel=kernel, initrd=initrd, cmdline=cmdline))
+                action.vm = params.VM(os=params.OperatingSystem(
+                    kernel=kernel, initrd=initrd, cmdline=cmdline))
             if cloudinit:
-	    	if os.path.exists("%s.yml" % name):
-		    cloudinitfile = "%s.yml" % name
-		elif os.path.exists('cloudinit.yml'):
-		    cloudinitfile = 'cloudinit.yml'
-		else:
-		    print "Missing cloudinit file %s.yml and default cloudinit.yml" % name
-		    sys.exit(0)
-	    	with open(cloudinitfile, 'r') as f:
-		    info = load(f)
-		    host_name = name
-		    if 'ip1' in info.keys() and ip1 is None:
-		    	ip1 = info['ip']
-		    subnet1 = info['netmask'] if 'netmask' in info.keys() else None
-		    gateway = info['gateway'] if 'gateway' in info.keys() else None
-		    authorized_ssh_keys = '\n'.join(info['ssh_authorized_keys']) if 'ssh_authorized_keys' in info.keys() else None
-		    domain = info['domain'] if 'domain' in info.keys() else None
-		    dns1 = ','.join(info['dns']) if 'dns' in info.keys() else None
-		    root_password = info['password'] if 'password' in info.keys() else None
-		    custom_script = "runcmd:\n%s" % dump(info['runcmd'], default_flow_style=False) if 'runcmd' in info.keys() else None
-		    if domain:
-		    	host_name = "%s.%s" % (name, domain)
-                if ip1 and subnet1 and gateway:
-                    ip = params.IP(address=ip1, netmask=subnet1, gateway=gateway)
-		    nic = params.GuestNicConfiguration(name='eth0', boot_protocol= 'STATIC', ip=ip, on_boot=True)
+                if os.path.exists("%s.yml" % name):
+                    cloudinitfile = "%s.yml" % name
+                elif os.path.exists('cloudinit.yml'):
+                    cloudinitfile = 'cloudinit.yml'
                 else:
-		    nic = params.GuestNicConfiguration(name='eth0', boot_protocol= 'DHCP', on_boot=True)
-		nic_configurations = params.GuestNicsConfiguration(nic_configuration=[nic])
-		initialization=params.Initialization(regenerate_ssh_keys=True, host_name=host_name, domain=domain, user_name='root', root_password=root_password, nic_configurations=nic_configurations, dns_servers=dns1, authorized_ssh_keys=authorized_ssh_keys, custom_script=custom_script)
+                    print "Missing cloudinit file %s.yml and default cloudinit.yml" % name
+                    sys.exit(0)
+                with open(cloudinitfile, 'r') as f:
+                    info = load(f)
+                    host_name = name
+                    if 'ip1' in info.keys() and ip1 is None:
+                        ip1 = info['ip']
+                    subnet1 = info[
+                        'netmask'] if 'netmask' in info.keys() else None
+                    gateway = info[
+                        'gateway'] if 'gateway' in info.keys() else None
+                    authorized_ssh_keys = '\n'.join(
+                        info['ssh_authorized_keys']) if 'ssh_authorized_keys' in info.keys() else None
+                    domain = info[
+                        'domain'] if 'domain' in info.keys() else None
+                    dns1 = ','.join(
+                        info['dns']) if 'dns' in info.keys() else None
+                    root_password = info[
+                        'password'] if 'password' in info.keys() else None
+                    custom_script = "runcmd:\n%s" % dump(
+                        info['runcmd'], default_flow_style=False) if 'runcmd' in info.keys() else None
+                    if domain:
+                        host_name = "%s.%s" % (name, domain)
+                if ip1 and subnet1 and gateway:
+                    ip = params.IP(address=ip1, netmask=subnet1,
+                                   gateway=gateway)
+                    nic = params.GuestNicConfiguration(
+                        name='eth0', boot_protocol='STATIC', ip=ip, on_boot=True)
+                else:
+                    nic = params.GuestNicConfiguration(
+                        name='eth0', boot_protocol='DHCP', on_boot=True)
+                nic_configurations = params.GuestNicsConfiguration(
+                    nic_configuration=[nic])
+                initialization = params.Initialization(regenerate_ssh_keys=True, host_name=host_name, domain=domain, user_name='root', root_password=root_password,
+                                                       nic_configurations=nic_configurations, dns_servers=dns1, authorized_ssh_keys=authorized_ssh_keys, custom_script=custom_script)
                 action.vm = params.VM(initialization=initialization)
-		action.use_cloud_init =True
+                action.use_cloud_init = True
             elif iso:
                 iso = checkiso(api, iso)
                 boot1 = params.Boot(dev="cdrom")
                 boot2 = params.Boot(dev="hd")
-                cdrom=params.CdRom(file=iso)
+                cdrom = params.CdRom(file=iso)
                 vm.cdroms.add(cdrom)
                 vm.update()
-                action.vm=params.VM(os=params.OperatingSystem(boot=[boot1, boot2]))
+                action.vm = params.VM(
+                    os=params.OperatingSystem(boot=[boot1, boot2]))
             elif boot:
                 boot = boot.split(",")
                 boot1 = boot[0]
-                if len(boot) !=2 or boot[1] == 'None':
+                if len(boot) != 2 or boot[1] == 'None':
                     boot2 = None
                 else:
                     boot2 = boot[1]
-                if boot1==boot2:
+                if boot1 == boot2:
                     print "Same boot options provided"
                     sys.exit(1)
-                if boot1 not in ["hd","cdrom","network"] or boot2 not in ["hd","cdrom","network",None]:
+                if boot1 not in ["hd", "cdrom", "network"] or boot2 not in ["hd", "cdrom", "network", None]:
                     print "incorrect boot options provided.Leaving..."
                     sys.exit(1)
                 boot1 = params.Boot(dev=boot1)
                 boot2 = params.Boot(dev=boot2)
-                action.vm = params.VM(os=params.OperatingSystem(boot=[boot1, boot2]))
+                action.vm = params.VM(
+                    os=params.OperatingSystem(boot=[boot1, boot2]))
             else:
                 print "No special options passed for runonce.Leaving..."
                 sys.exit(0)
@@ -869,21 +972,21 @@ if len(args) == 1 and not new:
     if kill:
         if not forcekill:
             sure = raw_input("Confirm you want to destroy VM %s:(y/N)" % name)
-            if sure!="Y":
+            if sure != "Y":
                 print "Not doing anything"
                 sys.exit(1)
-        if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up" or api.vms.get(name).status.state=="reboot_in_progress":
+        if api.vms.get(name).status.state == "up" or api.vms.get(name).status.state == "powering_up" or api.vms.get(name).status.state == "reboot_in_progress":
             api.vms.get(name).stop()
-	    while api.vms.get(name).status.state!="down":
+            while api.vms.get(name).status.state != "down":
                 print "Waiting for vm to stop"
-		time.sleep(5)
+                time.sleep(5)
             print "VM %s stopped" % name
         api.vms.get(name).delete()
         print "VM %s killed" % name
         sys.exit(0)
     if stop:
-        if api.vms.get(name).status.state=="down":
-            print "VM allready stopped"
+        if api.vms.get(name).status.state == "down":
+            print "VM already stopped"
             sys.exit(0)
         api.vms.get(name).stop()
         print "VM %s stopped" % name
@@ -896,7 +999,7 @@ if len(args) == 1 and not new:
                 action.host = host
                 vm.migrate(action=action)
             else:
-                print "Specified host doesnt exist.Not doing anything...."
+                print "Specified host doesn't exist.Not doing anything...."
         else:
             vm.migrate()
         print "VM s migration launched"
@@ -909,18 +1012,19 @@ if len(args) == 1 and not new:
         isofound = False
         isodomains = []
         for sd in api.storagedomains.list():
-            if sd.get_type()=="iso":
+            if sd.get_type() == "iso":
                 isodomains.append(sd)
-        if len(isodomains)==0:
+        if len(isodomains) == 0:
             print "No iso domain found.Leaving..."
             sys.exit(1)
         for sd in isodomains:
             for f in sd.files.list():
-                if f.get_id()==iso:
+                if f.get_id() == iso:
                     isofound = True
                     cdparams = params.CdRom(file=f)
-                    if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
-                        cdrom=vm.cdroms.get(id="00000000-0000-0000-0000-000000000000")
+                    if api.vms.get(name).status.state == "up" or api.vms.get(name).status.state == "powering_up":
+                        cdrom = vm.cdroms.get(
+                            id="00000000-0000-0000-0000-000000000000")
                         isofile = params.File(id=iso)
                         cdrom.set_file(isofile)
                         cdrom.update(current=True)
@@ -934,11 +1038,11 @@ if len(args) == 1 and not new:
     if boot:
         boot = boot.split(",")
         boot1 = boot[0]
-        if len(boot) !=2 or boot[1] == 'None':
+        if len(boot) != 2 or boot[1] == 'None':
             boot2 = None
         else:
             boot2 = boot[1]
-        if boot1==boot2:
+        if boot1 == boot2:
             print "Same boot options provided"
             sys.exit(1)
         if boot1 not in ["hd", "cdrom", "network"] or boot2 not in ["hd", "cdrom", "network", None]:
@@ -946,11 +1050,11 @@ if len(args) == 1 and not new:
             sys.exit(1)
         boot1 = params.Boot(dev=boot1)
         boot2 = params.Boot(dev=boot2)
-        vm.os.boot = [ boot1, boot2 ]
+        vm.os.boot = [boot1, boot2]
         print "boot options correctly changed for %s" % (name)
         vm.update()
     if reset:
-        vm.os.kernel,vm.os.initrd,vm.os.cmdline="","",""
+        vm.os.kernel, vm.os.initrd, vm.os.cmdline = "", "", ""
         vm.update()
         print "kernel options resetted for %s" % (name)
     if kernel:
@@ -973,8 +1077,8 @@ if len(args) == 1 and not new:
         tags = tags.split(",")
         for tag in tags:
             tagfound = False
-            for tg  in api.tags.list():
-                if tg.get_name()==tag:
+            for tg in api.tags.list():
+                if tg.get_name() == tag:
                     tagfound = True
                     vm.tags.add(tg)
                     vm.update()
@@ -982,8 +1086,9 @@ if len(args) == 1 and not new:
                     sys.exit(0)
             if not tagfound:
                 print "Tag not available..."
-                sure = raw_input("Do you want me to create tag %s and add it to vm %s:(y/N)" % (tag,name))
-                if sure!="Y":
+                sure = raw_input(
+                    "Do you want me to create tag %s and add it to vm %s:(y/N)" % (tag, name))
+                if sure != "Y":
                     print "Not doing anything"
                     sys.exit(1)
                 tag = params.Tag(name=tag)
@@ -991,17 +1096,17 @@ if len(args) == 1 and not new:
                 print "Tag %s added..." % (tag.get_name())
                 vm.tags.add(tag)
                 vm.update()
-                print "Tag %s added to %s" % (tag,name)
+                print "Tag %s added to %s" % (tag, name)
     if deletetag:
         tags = vm.tags.list()
         for tag in tags:
-            if tag.get_name()==deletetag:
+            if tag.get_name() == deletetag:
                 tag.delete()
-                print "Tag %s removed from %s" % (deletetag,name)
+                print "Tag %s removed from %s" % (deletetag, name)
     if guestid:
         vm.os.type_ = guestid
         vm.update()
-        print "Guestid set to %s for %s" % (guestid,name)
+        print "Guestid set to %s for %s" % (guestid, name)
         sys.exit(0)
     if preferred:
         host = api.hosts.get(name=preferred)
@@ -1012,38 +1117,39 @@ if len(args) == 1 and not new:
         vm.placement_policy = placement_policy
         vm.update()
     if memory2:
-    	    vm.memory = memory2
-            vm.update()
-            print "Memory updated to %d" % memory2
+        vm.memory = memory2
+        vm.update()
+        print "Memory updated to %d" % memory2
     if deldisk:
-            api.vms.get(name).disks.get(name=deldisk).delete()
-            print "Disk %s deleted from %s" % (deldisk, vm.name)
+        api.vms.get(name).disks.get(name=deldisk).delete()
+        print "Disk %s deleted from %s" % (deldisk, vm.name)
     if adddisk:
         if not storagedomain:
             print "No Storage Domain specified"
             sys.exit(1)
-        if diskformat=="raw":
-            sparse=False
-        storagedomain=api.storagedomains.get(name=storagedomain)
+        if diskformat == "raw":
+            sparse = False
+        storagedomain = api.storagedomains.get(name=storagedomain)
         try:
             disks = api.vms.get(name).disks.list()
-            if len(disks)==0:
-                diskname = "%s_Disk1" %(name)
+            if len(disks) == 0:
+                diskname = "%s_Disk1" % (name)
             else:
                 disknumbers = []
                 for disk in disks:
                     if "%s_Disk" % (name) in disk.name:
                         disknumbers.append(int(disk.name[-1]))
-                if len(disknumbers)==0:
-                    diskname = "%s_Disk1" %(name)
+                if len(disknumbers) == 0:
+                    diskname = "%s_Disk1" % (name)
                 else:
-                    disknumber = max(disknumbers)+1
-                    diskname = "%s_Disk%d" %(name,disknumber)
-            disk1 = params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]), name=diskname , size=adddisk, type_='data', status=None, interface=diskinterface, format=diskformat, sparse=sparse, bootable=False)
+                    disknumber = max(disknumbers) + 1
+                    diskname = "%s_Disk%d" % (name, disknumber)
+            disk1 = params.Disk(storage_domains=params.StorageDomains(storage_domain=[
+                                storagedomain]), name=diskname, size=adddisk, type_='data', status=None, interface=diskinterface, format=diskformat, sparse=sparse, bootable=False)
             disk1 = api.disks.add(disk1)
             disk1id = disk1.get_id()
         except Exception as e:
-	    print e 
+            print e
             print "Insufficient space in storage domain.Leaving..."
             os._exit(1)
         while api.disks.get(id=disk1id).get_status().get_state() != "ok":
@@ -1054,10 +1160,10 @@ if len(args) == 1 and not new:
             print "Waiting for disk to be added to VM..."
             time.sleep(2)
         api.vms.get(name).disks.get(id=disk1id).activate()
-        print "Disk %s with size %d GB added" % (diskname,adddisk/1024/1024/1024)
+        print "Disk %s with size %d GB added" % (diskname, adddisk / 1024 / 1024 / 1024)
     if start:
-        if api.vms.get(name).status.state=="up" or api.vms.get(name).status.state=="powering_up":
-            print "VM %s allready started" % (vm.name)
+        if api.vms.get(name).status.state == "up" or api.vms.get(name).status.state == "powering_up":
+            print "VM %s already started" % (vm.name)
         else:
             if host:
                 hostname = host
@@ -1070,19 +1176,13 @@ if len(args) == 1 and not new:
             else:
                 api.vms.get(name).start()
                 print "VM %s started" % name
-	sys.exit(0)
+        sys.exit(0)
     if reboot:
-        if api.vms.get(name).status.state!="down":
+        if api.vms.get(name).status.state != "down":
             api.vms.get(name).stop()
         api.vms.get(name).start()
         print "VM %s rebooted" % name
-	sys.exit(0)
-#    if net:
-#        interface = 'eth0'
-#    nic = api.vms.get(name).nics.get(name=interface)
-#	nic.network=params.Network(name=net)
-#    nic.update()
-#	print "VM %s changed %s net to %s" % (name, interface,net)
+        sys.exit(0)
 
     vm = api.vms.get(name=name)
     if not vm:
@@ -1090,10 +1190,11 @@ if len(args) == 1 and not new:
         sys.exit(1)
 
     if console:
-        if vm.status.state=="down":
+        if vm.status.state == "down":
             print "Machine down"
             sys.exit(1)
-        while api.vms.get(name=name).status.state=="wait_for_launch":#or api.vms.get(name=name).status.state=="powering_up":
+        # or api.vms.get(name=name).status.state=="powering_up":
+        while api.vms.get(name=name).status.state == "wait_for_launch":
             print "Waiting for machine to be up..."
             time.sleep(5)
         if not oca or not os.path.exists(oca):
@@ -1105,17 +1206,18 @@ if len(args) == 1 and not new:
         vm = api.vms.get(name=name)
         vm.ticket().set_ticket("")
         ticket = vm.ticket().get_ticket().get_value()
-        address,port,sport=vm.get_display().get_address(),vm.get_display().get_port(),vm.get_display().get_secure_port()
-        id=vm.get_host().get_id()
-        realaddress = getip(api,vm.get_host().get_id())
-        subject = "%s,CN=%s" % (oorg,realaddress)
+        address, port, sport = vm.get_display().get_address(
+        ), vm.get_display().get_port(), vm.get_display().get_secure_port()
+        id = vm.get_host().get_id()
+        realaddress = getip(api, vm.get_host().get_id())
+        subject = "%s,CN=%s" % (oorg, realaddress)
         print "Password:  %s" % ticket
-        protocol=vm.get_display().get_type()
+        protocol = vm.get_display().get_type()
         if protocol == 'spice':
-	   ocacontent = open(oca).readlines()
-	   ocacontent = [ line.replace('\n', '\\n') for line in ocacontent]
-	   ocacontent = "".join(ocacontent)
-	   connectiondetails = """[virt-viewer]
+            ocacontent = open(oca).readlines()
+            ocacontent = [line.replace('\n', '\\n') for line in ocacontent]
+            ocacontent = "".join(ocacontent)
+            connectiondetails = """[virt-viewer]
 type=spice
 host={address}
 port=-1
@@ -1132,24 +1234,25 @@ ca={ocacontent}
 toggle-fullscreen=shift+f11
 release-cursor=shift+f12
 secure-attention=ctrl+alt+end
-secure-channels=main;inputs;cursor;playback;record;display;usbredir;smartcard""".format(subject=subject,ocacontent=ocacontent,address=address,sport=sport,ticket=ticket)
-        elif protocol=="vnc":
-		connectiondetails = """[virt-viewer] 
+secure-channels=main;inputs;cursor;playback;record;display;usbredir;smartcard""".format(subject=subject, ocacontent=ocacontent, address=address, sport=sport, ticket=ticket)
+        elif protocol == "vnc":
+            connectiondetails = """[virt-viewer]
 type=vnc
-host={address} 
-port={port} 
-password={ticket} 
-delete-this-file=0 
-toggle-fullscreen=shift+f11 
+host={address}
+port={port}
+password={ticket}
+delete-this-file=0
+toggle-fullscreen=shift+f11
 release-cursor=shift+f12""".format(address=address, port=port, ticket=ticket)
         if oproxy:
-		connectiondetails = "%s\nproxy=%s" % (connectiondetails, oproxy)
-	with open("/tmp/console.vv", "w") as f:
-		f.write(connectiondetails)	
-	if os.path.exists('/Users'):
-        	os.popen("/Applications/RemoteViewer.app/Contents/MacOS/RemoteViewer /tmp/console.vv &")
-	else:
-        	os.popen("remote-viewer /tmp/console.vv &")
+            connectiondetails = "%s\nproxy=%s" % (connectiondetails, oproxy)
+        with open("/tmp/console.vv", "w") as f:
+            f.write(connectiondetails)
+        if os.path.exists('/Users'):
+            os.popen(
+                "/Applications/RemoteViewer.app/Contents/MacOS/RemoteViewer /tmp/console.vv &")
+        else:
+            os.popen("remote-viewer /tmp/console.vv &")
         sys.exit(0)
 
     if info:
@@ -1159,68 +1262,71 @@ release-cursor=shift+f12""".format(address=address, port=port, ticket=ticket)
         print "created at: %s" % vm.creation_time.strftime("%Y-%m-%d %H:%M")
         print "uid: %s" % vm.get_id()
         print "boot1: %s" % (vm.os.boot[0].get_dev())
-        if len(vm.os.boot)==2:
+        if len(vm.os.boot) == 2:
             print "boot2: %s" % (vm.os.boot[1].get_dev())
         else:
             print 'boot2: None'
         for cdrom in vm.get_cdroms().list():
-            if cdrom.get_file():print "Cdrom: %s" % cdrom.get_file().get_id()
+            if cdrom.get_file():
+                print "Cdrom: %s" % cdrom.get_file().get_id()
         if vm.os.kernel or vm.os.initrd or vm.os.cmdline:
-            print "kernel: %s Initrd:%s Cmdline:%s" % (vm.os.kernel,vm.os.initrd,vm.os.cmdline)
+            print "kernel: %s Initrd:%s Cmdline:%s" % (vm.os.kernel, vm.os.initrd, vm.os.cmdline)
         print "status: %s" % vm.status.state
         print "os: %s" % vm.get_os().get_type()
-        if vm.status.state=="up" or vm.status.state=="wait_for_launch" or vm.status.state=="powering_up":
-            host = findhostbyid(api,vm.get_host().get_id())
+        if vm.status.state == "up" or vm.status.state == "wait_for_launch" or vm.status.state == "powering_up":
+            host = findhostbyid(api, vm.get_host().get_id())
             print "host: %s" % host
         preferredhost = vm.get_placement_policy().get_host()
-	print "high availability: %s" % vm.get_high_availability().get_enabled()
+        print "high availability: %s" % vm.get_high_availability().get_enabled()
         if preferredhost:
             hostid = preferredhost.get_id()
             print "preferred Host: %s" % api.hosts.get(id=hostid).get_name()
-        print "cpu: %s sockets:%s" % (vm.cpu.topology.cores,vm.cpu.topology.sockets)
-        if vm.status.state=="up":
+        print "cpu: %s sockets:%s" % (vm.cpu.topology.cores, vm.cpu.topology.sockets)
+        if vm.status.state == "up":
             for info in vm.get_statistics().list():
-                if info.get_description()=="CPU used by guest" or info.get_description()=="Memory used (agent)":
-                    for i in info.get_values().get_value():value=i.get_datum()
-                    print "%s: %s" % (info.get_description().lower(),value)
-        memory = vm.memory/1024/1024
+                if info.get_description() == "CPU used by guest" or info.get_description() == "Memory used (agent)":
+                    for i in info.get_values().get_value():
+                        value = i.get_datum()
+                    print "%s: %s" % (info.get_description().lower(), value)
+        memory = vm.memory / 1024 / 1024
         print "memory: %dMb" % memory
         for disk in vm.disks.list():
             try:
-                size = disk.size/1024/1024/1024
+                size = disk.size / 1024 / 1024 / 1024
                 diskid = disk.get_id()
                 for stor in api.disks.get(id=diskid).get_storage_domains().get_storage_domain():
                     storid = stor.get_id()
                     storname = api.storagedomains.get(id=storid).name
-                print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s active: %s storagedomain: %s" % (disk.name,size,disk.format,disk.sparse,disk.get_status().get_state(),disk.get_active(),storname)
+                print "diskname: %s disksize: %sGB diskformat: %s thin: %s status: %s active: %s storagedomain: %s" % (disk.name, size, disk.format, disk.sparse, disk.get_status().get_state(), disk.get_active(), storname)
             except:
                 print "diskname: N/A"
         for nic in vm.nics.list():
-	    if nic.network is not None:
-        	    net = api.networks.get(id=nic.network.id).get_name()
-	    else:
-		    net = 'N/A'
-            print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name,nic.mac.address,net,nic.interface)
+            if nic.network is not None:
+                net = api.networks.get(id=nic.network.id).get_name()
+            else:
+                net = 'N/A'
+            print "net interfaces: %s mac: %s net: %s type: %s " % (nic.name, nic.mac.address, net, nic.interface)
         info = vm.get_guest_info()
-        if info != None and info.get_ips() != None:
+        if info is not None and info.get_ips() is not None:
             ips = ''
             for element in info.get_ips().get_ip():
                 ips = "%s %s" % (ips, element.get_address())
             print "ips: %s" % (ips)
-	if info != None and info.get_fqdn() != None:
-	    print "fqdn: %s" % info.get_fqdn()
+        if info is not None and info.get_fqdn() is not None:
+            print "fqdn: %s" % info.get_fqdn()
         for tag in vm.get_tags().list():
             print "tags: %s" % tag.get_name()
         if vm.get_custom_properties():
             for custom in vm.get_custom_properties().get_custom_property():
-                print "custom Property: %s Value: %s" % (custom.get_name(),custom.get_value())
+                print "custom Property: %s Value: %s" % (custom.get_name(), custom.get_value())
         sys.exit(0)
 
-    profiles=createprofiles(client)
+    profiles = createprofiles(client)
 
 if listprofiles:
     print "Use one of the availables profiles:"
-    for profile in sorted(profiles.keys()): print profile
+    for profile in sorted(profiles.keys()):
+        print profile
     sys.exit(0)
 
 
@@ -1228,73 +1334,74 @@ if not new:
     print "No or non-existent arguments given...Leaving"
     sys.exit(0)
 if len(args) == 1:
-    name=args[0]
+    name = args[0]
 if not name:
-    name=raw_input("enter machine s name:\n")
+    name = raw_input("enter machine s name:\n")
 if cobbler:
     s = xmlrpclib.Server("http://%s/cobbler_api" % cobblerhost)
-    token = s.login(cobbleruser,cobblerpassword)
-    system=s.find_system({"name":name})
-    if system!=[]:
-        print "%s allready defined in cobbler...Use the following command if you plan to reinstall this machine:" % (name)
-        print "%s -ZK %s -C %s" % (sys.argv[0],name,client)
+    token = s.login(cobbleruser, cobblerpassword)
+    system = s.find_system({"name": name})
+    if system != []:
+        print "%s already defined in cobbler...Use the following command if you plan to reinstall this machine:" % (name)
+        print "%s -ZK %s -C %s" % (sys.argv[0], name, client)
         sys.exit(0)
 
 if not profile:
     print 'Choose a profile for your machine:'
-    #propose available profiles
-    for prof in profiles.keys():print prof
+    # propose available profiles
+    for prof in profiles.keys():
+        print prof
     profile = raw_input()
-#check if profile is within our keys or exit
-if not profiles.has_key(profile):
+# check if profile is within our keys or exit
+if profile not in profiles.keys():
     print 'Invalid profile'
     sys.exit(0)
 
-#grab all conf from profile
-if profiles[profile].has_key('clu'):
+# grab all conf from profile
+if 'clu' in profiles[profile].keys():
     clu = profiles[profile]['clu']
-if profiles[profile].has_key('numinterfaces'):
+if 'numinterfaces' in profiles[profile].keys():
     numinterfaces = int(profiles[profile]['numinterfaces'])
-if profiles[profile].has_key('boot1'):
+if 'boot1' in profiles[profile].keys():
     boot1 = profiles[profile]['boot1']
-if profiles[profile].has_key('boot2'):
+if 'boot2' in profiles[profile].keys():
     boot2 = profiles[profile]['boot2']
-if profiles[profile].has_key('iso'):
+if 'iso' in profiles[profile].keys():
     iso = profiles[profile]['iso']
-if profiles[profile].has_key('storagedomain'):
+if 'storagedomain' in profiles[profile].keys():
     storagedomain = profiles[profile]['storagedomain']
-if profiles[profile].has_key('netinterface'):
+if 'netinterface' in profiles[profile].keys():
     netinterface = profiles[profile]['netinterface']
-if profiles[profile].has_key('diskinterface'):
+if 'diskinterface' in profiles[profile].keys():
     netinterface = profiles[profile]['diskinterface']
-if profiles[profile].has_key('disksize'):
-    disksize = int(profiles[profile]['disksize'])*GB
-if not guestid and profiles[profile].has_key('guestid'):
+if 'disksize' in profiles[profile].keys():
+    disksize = int(profiles[profile]['disksize']) * GB
+if not guestid and 'guestid' in profiles[profile].keys():
     guestid = profiles[profile]['guestid']
-if not tags and profiles[profile].has_key('tags'):
+if not tags and 'tags' in profiles[profile].keys():
     tags = profiles[profile]['tags']
-if not kernel and profiles[profile].has_key('kernel'):
+if not kernel and 'kernel' in profiles[profile].keys():
     kernel = profiles[profile]['kernel']
-if not initrd and profiles[profile].has_key('initrd'):
+if not initrd and 'initrd' in profiles[profile].keys():
     initrd = profiles[profile]['initrd']
-if not cmdline and profiles[profile].has_key('cmdline'):
+if not cmdline and 'cmdline' in profiles[profile].keys():
     cmdline = profiles[profile]['cmdline']
-if not runonce and profiles[profile].has_key('runonce'):
+if not runonce and 'runonce' in profiles[profile].keys():
     runonce = True
-if not hostgroup and profiles[profile].has_key('hostgroup'):
+if not hostgroup and 'hostgroup' in profiles[profile].keys():
     hostgroup = profiles[profile]["hostgroup"]
-if profiles[profile].has_key('dns'):
+if 'dns' in profiles[profile].keys():
     dns = profiles[profile]['dns']
-if profiles[profile].has_key('memory'):
-    memory = int(profiles[profile]['memory'])*MB
-if profiles[profile].has_key('numcpu'):
+if 'memory' in profiles[profile].keys():
+    memory = int(profiles[profile]['memory']) * MB
+if 'numcpu' in profiles[profile].keys():
     numcpu = int(profiles[profile]['numcpu'])
-if not puppetclasses and profiles[profile].has_key('puppetclasses'):
+if not puppetclasses and 'puppetclasses' in profiles[profile].keys():
     puppetclasses = profiles[profile]['puppetclasses']
 
 if extra:
-    cmdline = "%s %s" %(cmdline, extra)
-#grab nets
+    cmdline = "%s %s" % (cmdline, extra)
+# grab nets
 if numinterfaces == 1:
     net1 = profiles[profile]['net1']
     if installnet:
@@ -1308,7 +1415,7 @@ elif numinterfaces == 2:
         nets = [net1, installnet]
     else:
         nets = [net1, net2]
-#cluster machines
+# cluster machines
 elif numinterfaces == 3:
     net1 = profiles[profile]['net1']
     net2 = profiles[profile]['net2']
@@ -1317,22 +1424,22 @@ elif numinterfaces == 3:
         nets = [net1, installnet, net3]
     else:
         nets = [net1, net2, net3]
-#cluster machines
+# cluster machines
 elif numinterfaces == 4:
     net1 = profiles[profile]['net1']
     net2 = profiles[profile]['net2']
     net3 = profiles[profile]['net3']
     net4 = profiles[profile]['net4']
     if installnet:
-        nets=[net1, installnet, net3, net4]
+        nets = [net1, installnet, net3, net4]
     else:
-        nets=[net1, net2, net3, net4]
+        nets = [net1, net2, net3, net4]
 
 if not disksize:
     print "Missing disksize...Check documentation"
     os._exit(1)
 
-#VM CREATION IN OVIRT
+# VM CREATION IN OVIRT
 if memory2:
     memory = memory2
 if disksize2:
@@ -1340,34 +1447,40 @@ if disksize2:
 if not memory or not disksize:
     print "Missing memory or disk info for VM %s. Wont be created" % name
     os._exit(1)
-if diskformat=="raw":sparse=False
+if diskformat == "raw":
+    sparse = False
 vm = api.vms.get(name=name)
 if vm:
-    print "VM %s allready existing.Leaving..." % name
+    print "VM %s already existing.Leaving..." % name
     os._exit(1)
 clu = api.clusters.get(name=clu)
 storagedomain = api.storagedomains.get(name=storagedomain)
 try:
-    disk1 = params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]), name="%s_Disk1" % (name), size=disksize, type_='system', status=None, interface=diskinterface, format=diskformat, sparse=sparse, bootable=True)
+    disk1 = params.Disk(storage_domains=params.StorageDomains(storage_domain=[storagedomain]), name="%s_Disk1" % (
+        name), size=disksize, type_='system', status=None, interface=diskinterface, format=diskformat, sparse=sparse, bootable=True)
     disk1 = api.disks.add(disk1)
     disk1id = disk1.get_id()
 except:
     print "Insufficient space in storage domain.Leaving..."
     os._exit(1)
-#boot order
-boot = [params.Boot(dev=boot1),params.Boot(dev=boot2)]
-#vm creation
-#if runonce specified,dont put kernelopts in VM definition, but rather at launch time
+# boot order
+boot = [params.Boot(dev=boot1), params.Boot(dev=boot2)]
+# vm creation
+# if runonce specified,dont put kernelopts in VM definition, but rather at
+# launch time
 if runonce:
-    kernel2,initrd2,cmdline2=kernel,initrd,cmdline
-    kernel,initrd,cmdline=None,None,None
-api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'), os=params.OperatingSystem(type_=guestid, boot=boot, kernel=kernel, initrd=initrd, cmdline=cmdline), cpu=params.CPU(topology=params.CpuTopology(cores=numcpu)), type_="server"))
-#add nics
-api.vms.get(name).nics.add(params.NIC(name='eth0', network=params.Network(name=net1), interface=netinterface))
+    kernel2, initrd2, cmdline2 = kernel, initrd, cmdline
+    kernel, initrd, cmdline = None, None, None
+api.vms.add(params.VM(name=name, memory=memory, cluster=clu, template=api.templates.get('Blank'), os=params.OperatingSystem(
+    type_=guestid, boot=boot, kernel=kernel, initrd=initrd, cmdline=cmdline), cpu=params.CPU(topology=params.CpuTopology(cores=numcpu)), type_="server"))
+# add nics
+api.vms.get(name).nics.add(params.NIC(
+    name='eth0', network=params.Network(name=net1), interface=netinterface))
 
-if numinterfaces>=2:
-    api.vms.get(name).nics.add(params.NIC(name='eth1', network=params.Network(name=net2), interface=netinterface))
-    #compare eth0 and eth1 to get sure eth0 has a lower mac
+if numinterfaces >= 2:
+    api.vms.get(name).nics.add(params.NIC(
+        name='eth1', network=params.Network(name=net2), interface=netinterface))
+    # compare eth0 and eth1 to get sure eth0 has a lower mac
     eth0ok = True
     maceth0 = api.vms.get(name).nics.get(name="eth0").mac.address
     maceth1 = api.vms.get(name).nics.get(name="eth1").mac.address
@@ -1379,7 +1492,7 @@ if numinterfaces>=2:
         if el0 == el1:
             pass
         elif el0 > el1:
-            eth0ok=False
+            eth0ok = False
 
     if not eth0ok:
         tempnic = "00:11:11:11:11:11"
@@ -1395,7 +1508,7 @@ if numinterfaces>=2:
 
 if mac1:
     nic = api.vms.get(name).nics.get(name="eth0")
-    if not ":" in mac1:
+    if ':' not in mac1:
         mac1 = "%s%s" % (nic.mac.address[:-2], mac1)
     nic.mac.address = mac1
     nic.update()
@@ -1403,25 +1516,27 @@ if mac1:
 
 if mac2:
     nic = api.vms.get(name).nics.get(name="eth1")
-    if not ":" in mac2:
+    if ':' not in mac2:
         mac2 = "%s%s" % (nic.mac.address[:-2], mac2)
     nic.mac.address = mac2
     nic.update()
 
 
-if numinterfaces>=3:
-    api.vms.get(name).nics.add(params.NIC(name='eth2', network=params.Network(name=net3), interface=netinterface))
-if numinterfaces>=4:
-    api.vms.get(name).nics.add(params.NIC(name='eth3', network=params.Network(name=net4), interface=netinterface))
+if numinterfaces >= 3:
+    api.vms.get(name).nics.add(params.NIC(
+        name='eth2', network=params.Network(name=net3), interface=netinterface))
+if numinterfaces >= 4:
+    api.vms.get(name).nics.add(params.NIC(
+        name='eth3', network=params.Network(name=net4), interface=netinterface))
 if iso:
-    iso = checkiso(api,iso)
+    iso = checkiso(api, iso)
     cdrom = params.CdRom(file=iso)
     api.vms.get(name).cdroms.add(cdrom)
 if tags:
     tags = tags.split(",")
     for tag in tags:
-        for tg  in api.tags.list():
-            if tg.get_name()==tag:
+        for tg in api.tags.list():
+            if tg.get_name() == tag:
                 tagfound = True
                 api.vms.get(name).tags.add(tg)
 api.vms.get(name).update()
@@ -1439,29 +1554,29 @@ if cobbler or foreman:
     for nic in vm.nics.list():
         macaddr.append(nic.mac.address)
 
-#VM CREATION IN COBBLER
-#grab ips and extra routes for cobbler
+# VM CREATION IN COBBLER
+# grab ips and extra routes for cobbler
 
 if cobbler:
-    gwstatic,gwbackup,staticroutes,backuproutes=None,None,None,None
+    gwstatic, gwbackup, staticroutes, backuproutes = None, None, None, None
     gateway = None
-    if profiles[profile].has_key("nextserver"):
+    if 'nextserver' in profiles[profile].keys():
         nextserver = profiles[profile]['nextserver']
-    if profiles[profile].has_key("gwbackup"):
+    if 'gwbackup' in profiles[profile].keys():
         gwbackup = profiles[profile]['gwbackup']
-    if profiles[profile].has_key("gwstatic"):
+    if 'gwstatic' in profiles[profile].keys():
         gwstatic = profiles[profile]['gwstatic']
-    if profiles[profile].has_key("staticroutes"):
+    if 'staticroutes' in profiles[profile].keys():
         staticroutes = profiles[profile]['staticroutes']
-    if profiles[profile].has_key("subnet1"):
+    if 'subnet1' in profiles[profile].keys():
         subnet1 = profiles[profile]['subnet1']
-    if profiles[profile].has_key("subnet2"):
+    if 'subnet2' in profiles[profile].keys():
         subnet2 = profiles[profile]['subnet2']
-    if profiles[profile].has_key("subnet3"):
+    if 'subnet3' in profiles[profile].keys():
         subnet3 = profiles[profile]['subnet3']
-    if profiles[profile].has_key("subnet4"):
+    if 'subnet4' in profiles[profile].keys():
         subnet4 = profiles[profile]['subnet4']
-    if profiles[profile].has_key("gateway"):
+    if 'gateway' in profiles[profile].keys():
         gateway = profiles[profile]['gateway']
     if numinterfaces == 1:
         if not subnet1:
@@ -1477,15 +1592,18 @@ if cobbler:
             ip1 = raw_input("Enter first ip:\n")
         if not ip2:
             ip2 = raw_input("Enter second ip:\n")
-    #cluster machines
+    # cluster machines
     elif numinterfaces == 3:
         if not subnet1 or not subnet2 or not subnet3:
             print "Missing subnet in client ini file.Check documentation"
             sys.exit(1)
-        if not ip1:ip1=raw_input("Enter first service ip:\n")
-        if not ip2:ip2=raw_input("Enter second ip:\n")
-        if not ip3:ip3=raw_input("Enter third ip:\n")
-    #cluster machines
+        if not ip1:
+            ip1 = raw_input("Enter first service ip:\n")
+        if not ip2:
+            ip2 = raw_input("Enter second ip:\n")
+        if not ip3:
+            ip3 = raw_input("Enter third ip:\n")
+    # cluster machines
     elif numinterfaces == 4:
         if not subnet1 or not subnet2 or not subnet3 or not subnet4:
             print "Missing subnet in client ini file.Check documentation"
@@ -1499,78 +1617,96 @@ if cobbler:
         if not ip4:
             ip4 = raw_input("Enter fourth ip:\n")
     if gwstatic and staticroutes:
-        staticroutes = staticroutes.replace(",",":%s " % gwstatic)+":"+gwstatic
+        staticroutes = staticroutes.replace(
+            ",", ":%s " % gwstatic) + ":" + gwstatic
     if gwbackup and backuproutes:
-        backuproutes = backuproutes.replace(",",":%s " % gwbackup)+":"+gwbackup
+        backuproutes = backuproutes.replace(
+            ",", ":%s " % gwbackup) + ":" + gwbackup
         staticroutes = "%s %s" % (staticroutes, backuproutes)
 
-    #3-create cobbler system
+    # 3-create cobbler system
     system = s.new_system(token)
     s.modify_system(system, 'name', name, token)
     s.modify_system(system, 'hostname', name, token)
     s.modify_system(system, 'profile', profile, token)
-    #if nextserver:
+    # if nextserver:
     # s.modify_system(system, 'server', nextserver, token)
-    if numinterfaces==1:
+    if numinterfaces == 1:
         if staticroutes:
-            eth0 = {"macaddress-eth0":macaddr[0], "static-eth0":1, "ipaddress-eth0":ip1, "subnet-eth0":subnet1, "staticroutes-eth0":staticroutes}
+            eth0 = {"macaddress-eth0": macaddr[0], "static-eth0": 1, "ipaddress-eth0": ip1,
+                    "subnet-eth0": subnet1, "staticroutes-eth0": staticroutes}
         else:
-            eth0 = {"macaddress-eth0":macaddr[0], "static-eth0":1, "ipaddress-eth0":ip1, "subnet-eth0":subnet1}
+            eth0 = {"macaddress-eth0": macaddr[0], "static-eth0": 1,
+                    "ipaddress-eth0": ip1, "subnet-eth0": subnet1}
         if dns:
             eth0["dnsname-eth0"] = "%s.%s" % (name, dns)
-        s.modify_system(system, 'modify_interface',eth0, token)
-    elif numinterfaces==2:
-        eth0 = {"macaddress-eth0":macaddr[0], "static-eth0":1, "ipaddress-eth0":ip1, "subnet-eth0":subnet1}
+        s.modify_system(system, 'modify_interface', eth0, token)
+    elif numinterfaces == 2:
+        eth0 = {"macaddress-eth0": macaddr[0], "static-eth0": 1,
+                "ipaddress-eth0": ip1, "subnet-eth0": subnet1}
         if dns:
             eth0["dnsname-eth0"] = "%s.%s" % (name, dns)
         if staticroutes:
-            eth1 = {"macaddress-eth1":macaddr[1], "static-eth1":1, "ipaddress-eth1":ip2, "subnet-eth1":subnet2, "staticroutes-eth1":staticroutes}
+            eth1 = {"macaddress-eth1": macaddr[1], "static-eth1": 1, "ipaddress-eth1": ip2,
+                    "subnet-eth1": subnet2, "staticroutes-eth1": staticroutes}
         else:
-            eth1 = {"macaddress-eth1":macaddr[1], "static-eth1":1, "ipaddress-eth1":ip2, "subnet-eth1":subnet2}
+            eth1 = {"macaddress-eth1": macaddr[1], "static-eth1": 1,
+                    "ipaddress-eth1": ip2, "subnet-eth1": subnet2}
         s.modify_system(system, 'modify_interface', eth0, token)
         s.modify_system(system, 'modify_interface', eth1, token)
-    elif numinterfaces==3:
-        eth0 = {"macaddress-eth0":macaddr[0], "static-eth0":1, "ipaddress-eth0":ip1, "subnet-eth0":subnet1}
+    elif numinterfaces == 3:
+        eth0 = {"macaddress-eth0": macaddr[0], "static-eth0": 1,
+                "ipaddress-eth0": ip1, "subnet-eth0": subnet1}
         if dns:
             eth0["dnsname-eth0"] = "%s.%s" % (name, dns)
         if staticroutes:
-            eth1 = {"macaddress-eth1":macaddr[1], "static-eth1":1, "ipaddress-eth1":ip2, "subnet-eth1":subnet2, "staticroutes-eth1":staticroutes}
+            eth1 = {"macaddress-eth1": macaddr[1], "static-eth1": 1, "ipaddress-eth1": ip2,
+                    "subnet-eth1": subnet2, "staticroutes-eth1": staticroutes}
         else:
-            eth1 = {"macaddress-eth1":macaddr[1], "static-eth1":1, "ipaddress-eth1":ip2, "subnet-eth1":subnet2}
-        eth2 = {"macaddress-eth2":macaddr[2], "static-eth2":1, "ipaddress-eth2":ip3, "subnet-eth2":subnet3}
-        s.modify_system(system,'modify_interface', eth0, token)
+            eth1 = {"macaddress-eth1": macaddr[1], "static-eth1": 1,
+                    "ipaddress-eth1": ip2, "subnet-eth1": subnet2}
+        eth2 = {"macaddress-eth2": macaddr[2], "static-eth2": 1,
+                "ipaddress-eth2": ip3, "subnet-eth2": subnet3}
+        s.modify_system(system, 'modify_interface', eth0, token)
         s.modify_system(system, 'modify_interface', eth1, token)
         s.modify_system(system, 'modify_interface', eth2, token)
-    elif numinterfaces==4:
-        eth0 = {"macaddress-eth0":macaddr[0], "static-eth0":1, "ipaddress-eth0":ip1, "subnet-eth0":subnet1}
+    elif numinterfaces == 4:
+        eth0 = {"macaddress-eth0": macaddr[0], "static-eth0": 1,
+                "ipaddress-eth0": ip1, "subnet-eth0": subnet1}
         if dns:
             eth0["dnsname-eth0"] = "%s.%s" % (name, dns)
         if staticroutes:
-            eth1 = {"macaddress-eth1":macaddr[1], "static-eth1":1, "ipaddress-eth1":ip2, "subnet-eth1":subnet2, "staticroutes-eth1":staticroutes}
+            eth1 = {"macaddress-eth1": macaddr[1], "static-eth1": 1, "ipaddress-eth1": ip2,
+                    "subnet-eth1": subnet2, "staticroutes-eth1": staticroutes}
         else:
-            eth1 = {"macaddress-eth1":macaddr[1], "static-eth1":1, "ipaddress-eth1":ip2, "subnet-eth1":subnet2}
-        eth2 = {"macaddress-eth2":macaddr[2], "static-eth2":1, "ipaddress-eth2":ip3, "subnet-eth2":subnet3}
-        eth3 = {"macaddress-eth3":macaddr[3], "static-eth3":1, "ipaddress-eth3":ip4, "subnet-eth3":subnet4}
+            eth1 = {"macaddress-eth1": macaddr[1], "static-eth1": 1,
+                    "ipaddress-eth1": ip2, "subnet-eth1": subnet2}
+        eth2 = {"macaddress-eth2": macaddr[2], "static-eth2": 1,
+                "ipaddress-eth2": ip3, "subnet-eth2": subnet3}
+        eth3 = {"macaddress-eth3": macaddr[3], "static-eth3": 1,
+                "ipaddress-eth3": ip4, "subnet-eth3": subnet4}
         s.modify_system(system, 'modify_interface', eth0, token)
         s.modify_system(system, 'modify_interface', eth1, token)
         s.modify_system(system, 'modify_interface', eth2, token)
         s.modify_system(system, 'modify_interface', eth3, token)
     if gateway:
         s.modify_system(system, 'gateway', gateway, token)
-    #if ksopts:
+    # if ksopts:
     #   s.modify_system(system,"kernel_options", ksopts, token)
     if cmdline:
-        s.modify_system(system,"ks_meta", cmdline, token)
+        s.modify_system(system, "ks_meta", cmdline, token)
 
     s.save_system(system, token)
     s.sync(token)
     print "VM %s created in cobbler" % name
 
 
-#VM CREATION IN FOREMAN
+# VM CREATION IN FOREMAN
 if foreman:
-    f = Foreman(foremanhost, foremanport, foremanuser, foremanpassword, foremansecure)
-    f.create(name=name, dns=dns, ip=ip1, mac=macaddr[0], operatingsystem=foremanos, environment=foremanenv, arch=foremanarch, puppet=foremanpuppet, ptable=foremanptable, hostgroup=hostgroup, build=foremanbuild)
+    f = Foreman(foremanhost, foremanport, foremanuser,
+                foremanpassword, foremansecure)
+    f.create(name=name, dns=dns, ip=ip1, mac=macaddr[0], operatingsystem=foremanos, environment=foremanenv,
+             arch=foremanarch, puppet=foremanpuppet, ptable=foremanptable, hostgroup=hostgroup, build=foremanbuild)
 if foreman and puppetclasses:
     f.addclasses(name=name, dns=dns, classes=puppetclasses)
 
@@ -1578,21 +1714,23 @@ if nolaunch and runonce:
     print "Both runonce and nolaunch specified for VM...nonsense!"
     sys.exit(0)
 if not nolaunch:
-    while api.vms.get(name).status.state =="image_locked":
+    while api.vms.get(name).status.state == "image_locked":
         print "Waiting For image to be unlocked..."
         time.sleep(5)
 
-    #at this point,VM is ready to be started
+    # at this point,VM is ready to be started
     if runonce:
         action = params.Action()
-        action.vm = params.VM(os=params.OperatingSystem(kernel=kernel2, initrd=initrd2, cmdline=cmdline2))
+        action.vm = params.VM(os=params.OperatingSystem(
+            kernel=kernel2, initrd=initrd2, cmdline=cmdline2))
         launched = False
         while not launched:
             try:
-            	if host:
-                	hostname = host
-                	host = api.hosts.get(name=host)
-                	action.vm.placement_policy = params.VmPlacementPolicy(host=host)
+                if host:
+                    hostname = host
+                    host = api.hosts.get(name=host)
+                    action.vm.placement_policy = params.VmPlacementPolicy(
+                        host=host)
                 api.vms.get(name).start(action=action)
                 launched = True
             except:
@@ -1603,19 +1741,18 @@ if not nolaunch:
         launched = False
         while not launched:
             try:
-            	if host:
-                	hostname = host
-                	host = api.hosts.get(name=host)
-                	action = params.Action()
-                	placement_policy = params.VmPlacementPolicy(host=host)
-                	action.vm = params.VM(placement_policy=placement_policy)
-                	api.vms.get(name).start(action=action)
-		else:
-                	api.vms.get(name).start()
-		launched = True
+                if host:
+                    hostname = host
+                    host = api.hosts.get(name=host)
+                    action = params.Action()
+                    placement_policy = params.VmPlacementPolicy(host=host)
+                    action.vm = params.VM(placement_policy=placement_policy)
+                    api.vms.get(name).start(action=action)
+                else:
+                    api.vms.get(name).start()
+                launched = True
             except:
                 print "waiting to launch vm..."
                 time.sleep(5)
                 continue
     print "VM %s started" % name
-
