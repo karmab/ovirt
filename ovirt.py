@@ -692,7 +692,10 @@ if summary:
                 else:
                     spm = ""
                 cluh = api.clusters.get(id=h.get_cluster().get_id()).get_name()
-                if cluh == clu.name:print "Host: %s Cpu: %s %s" % (h.name,h.cpu.name,spm)
+                if cluh == clu.name:
+			print "Host: %s Cpu: %s %s" % (h.name,h.cpu.name,spm)
+			#print h.get_memory()
+		
         print "\n"
     #handles clusters with no associated DC
     if len(nodcs)>0:
@@ -817,9 +820,9 @@ if len(args) == 1 and not new:
 		    	ip1 = info['ip']
 		    subnet1 = info['netmask'] if 'netmask' in info.keys() else None
 		    gateway = info['gateway'] if 'gateway' in info.keys() else None
-		    authorized_ssh_keys = info['ssh_authorized_keys'][0] if 'ssh_authorized_keys' in info.keys() else None
+		    authorized_ssh_keys = '\n'.join(info['ssh_authorized_keys']) if 'ssh_authorized_keys' in info.keys() else None
 		    domain = info['domain'] if 'domain' in info.keys() else None
-		    dns1 = info['dns'][0] if 'dns' in info.keys() else None
+		    dns1 = ','.join(info['dns']) if 'dns' in info.keys() else None
 		    root_password = info['password'] if 'password' in info.keys() else None
 		    custom_script = "runcmd:\n%s" % dump(info['runcmd'], default_flow_style=False) if 'runcmd' in info.keys() else None
 		    if domain:
