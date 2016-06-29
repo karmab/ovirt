@@ -10,7 +10,7 @@ notifications:
 
 before_install:
     - pip install pep8
-    - pip install mispellings
+    - pip install misspellings
 
 script:
     # Run pep8 on all .py files in all subfolders
