@@ -1,23 +1,21 @@
 language: python
 python:
-    - 2.7
-    - 3.3
-    - 3.4
-    - 3.5
-
+- 2.7
+- 3.3
+- 3.4
+- 3.5
 notifications:
-    email: false
-
+  email: false
 before_install:
-    - pip install pep8
-    - pip install misspellings
-
+- pip install pep8
+- pip install misspellings
 script:
-    # Run pep8 on all .py files in all subfolders
-    - find . -name \*.py -exec pep8 --ignore=E501,E402 {} +
-    - find . -name '*.py' | misspellings -f -
-
-#deploy:
-#  provider: pypi
-#  user: "karimb"
-#  password: "Your password"
+- find . -name \*.py -exec pep8 --ignore=E501,E402 {} +
+- find . -name '*.py' | misspellings -f -
+deploy:
+  provider: pypi
+  user: karimb
+  password:
+    secure: eDotMQJOdmMpUTzYQCaPIUYz0GXqfafzHP5tOzU9ksHPq6BS3mZf3HQMGzt0X4Tl65I6OFo1CgyCU1elmAsEeHcTAajx0WgokoY/PA2Ae/h7AUA+sJhMBifZW1CXn7V74OQ59PIlNfe/SQiBlRmjXyQ5hoSgXCX52EV/7lnXJ0I=
+  on:
+    tags: true
