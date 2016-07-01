@@ -1,8 +1,8 @@
 from setuptools import setup
 
 setup(name='ovirt',
-      version='1.2.5',
-      description='Ovirt utility',
+      version='1.2.7',
+      description='Script to manage ovirt engine',
       url='http://github.com/karmab/ovirt',
       author='Karim Boumedhel',
       author_email='karimboumedhel@gmail.com',
