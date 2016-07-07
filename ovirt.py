@@ -895,46 +895,46 @@ if len(args) == 1 and not new:
                 action.vm = params.VM(os=params.OperatingSystem(
                     kernel=kernel, initrd=initrd, cmdline=cmdline))
             if cloudinit:
+                host_name = name
                 if os.path.exists("%s.yml" % name):
                     cloudinitfile = "%s.yml" % name
                 elif os.path.exists('cloudinit.yml'):
                     cloudinitfile = 'cloudinit.yml'
                 else:
-                    print "Missing cloudinit file %s.yml and default cloudinit.yml" % name
-                    sys.exit(0)
-                with open(cloudinitfile, 'r') as f:
-                    info = load(f)
-                    host_name = name
-                    if 'ip1' in info.keys() and ip1 is None:
-                        ip1 = info['ip']
-                    subnet1 = info[
-                        'netmask'] if 'netmask' in info.keys() else None
-                    gateway = info[
-                        'gateway'] if 'gateway' in info.keys() else None
-                    authorized_ssh_keys = '\n'.join(
-                        info['ssh_authorized_keys']) if 'ssh_authorized_keys' in info.keys() else None
-                    domain = info[
-                        'domain'] if 'domain' in info.keys() else None
-                    dns1 = ','.join(
-                        info['dns']) if 'dns' in info.keys() else None
-                    root_password = info[
-                        'password'] if 'password' in info.keys() else None
-                    custom_script = "runcmd:\n%s" % dump(
-                        info['runcmd'], default_flow_style=False) if 'runcmd' in info.keys() else None
-                    if domain:
-                        host_name = "%s.%s" % (name, domain)
-                if ip1 and subnet1 and gateway:
-                    ip = params.IP(address=ip1, netmask=subnet1,
-                                   gateway=gateway)
-                    nic = params.GuestNicConfiguration(
-                        name='eth0', boot_protocol='STATIC', ip=ip, on_boot=True)
+                    print "Missing cloudinit file %s.yml and default cloudinit.yml. using default values" % name
+                    cloudinitfile = None
+                if cloudinitfile is not None:
+                    with open(cloudinitfile, 'r') as f:
+                        info = load(f)
+                        if 'ip1' in info.keys() and ip1 is None:
+                            ip1 = info['ip']
+                        subnet1 = info[
+                            'netmask'] if 'netmask' in info.keys() else None
+                        gateway = info[
+                            'gateway'] if 'gateway' in info.keys() else None
+                        authorized_ssh_keys = '\n'.join(
+                            info['ssh_authorized_keys']) if 'ssh_authorized_keys' in info.keys() else None
+                        domain = info[
+                            'domain'] if 'domain' in info.keys() else None
+                        dns1 = ','.join(
+                            info['dns']) if 'dns' in info.keys() else None
+                        root_password = info[
+                            'password'] if 'password' in info.keys() else None
+                        custom_script = "runcmd:\n%s" % dump(
+                            info['runcmd'], default_flow_style=False) if 'runcmd' in info.keys() else None
+                        if domain:
+                            host_name = "%s.%s" % (name, domain)
+                    if ip1 and subnet1 and gateway:
+                        ip = params.IP(address=ip1, netmask=subnet1, gateway=gateway)
+                        nic = params.GuestNicConfiguration(
+                            name='eth0', boot_protocol='STATIC', ip=ip, on_boot=True)
+                    else:
+                        nic = params.GuestNicConfiguration(
+                            name='eth0', boot_protocol='DHCP', on_boot=True)
+                    nic_configurations = params.GuestNicsConfiguration(
+                        nic_configuration=[nic])
                 else:
-                    nic = params.GuestNicConfiguration(
-                        name='eth0', boot_protocol='DHCP', on_boot=True)
-                nic_configurations = params.GuestNicsConfiguration(
-                    nic_configuration=[nic])
-                initialization = params.Initialization(regenerate_ssh_keys=True, host_name=host_name, domain=domain, user_name='root', root_password=root_password,
-                                                       nic_configurations=nic_configurations, dns_servers=dns1, authorized_ssh_keys=authorized_ssh_keys, custom_script=custom_script)
+                    initialization = params.Initialization(regenerate_ssh_keys=True, host_name=host_name)
                 action.vm = params.VM(initialization=initialization)
                 action.use_cloud_init = True
             elif iso:
