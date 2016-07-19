@@ -933,6 +933,7 @@ if len(args) == 1 and not new:
                             name='eth0', boot_protocol='DHCP', on_boot=True)
                     nic_configurations = params.GuestNicsConfiguration(
                         nic_configuration=[nic])
+                    initialization = params.Initialization(regenerate_ssh_keys=True, host_name=host_name, domain=domain, user_name='root', root_password=root_password, nic_configurations=nic_configurations, dns_servers=dns1, authorized_ssh_keys=authorized_ssh_keys, custom_script=custom_script)
                 else:
                     initialization = params.Initialization(regenerate_ssh_keys=True, host_name=host_name)
                 action.vm = params.VM(initialization=initialization)
