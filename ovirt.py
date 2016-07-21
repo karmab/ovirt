@@ -967,6 +967,9 @@ if len(args) == 1 and not new:
             else:
                 print "No special options passed for runonce.Leaving..."
                 sys.exit(0)
+            while api.vms.get(name).status.state != "down":
+                print "Waiting for vm to be ready"
+                time.sleep(5)
             api.vms.get(name).start(action=action)
             print "VM %s started in runonce mode" % name
         sys.exit(0)
