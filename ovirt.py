@@ -618,9 +618,9 @@ if foreman and client:
 
 
 if ossl:
-    url = "https://%s:%s/api" % (ohost, oport)
+    url = "https://%s:%s/ovirt-engine/api" % (ohost, oport)
 else:
-    url = "http://%s:%s/api" % (ohost, oport)
+    url = "http://%s:%s/ovirt-engine/api" % (ohost, oport)
 
 api = API(url=url, username=ouser, password=opassword,
           insecure=True, debug=debug)
