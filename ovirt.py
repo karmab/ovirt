@@ -3,42 +3,37 @@
 script to create virtual machines on ovirt/rhev
 """
 
+from foreman import Foreman
+import xmlrpclib
 import optparse
 import os
 from prettytable import PrettyTable
 import simplejson
 import sys
 import time
-import xmlrpclib
 import ConfigParser
 from ovirtsdk.api import API
 from ovirtsdk.xml import params
-from foreman import Foreman
-from re import sub
 from yaml import dump, load
 
 
 __author__ = "Karim Boumedhel"
 __credits__ = ["Karim Boumedhel"]
 __license__ = "GPL"
-__version__ = "1.2.8"
+__version__ = "1.2.9"
 __maintainer__ = "Karim Boumedhel"
 __email__ = "karim.boumedhel@gmail.com"
 __status__ = "Production"
 
 ERR_NOOVIRTFILE = "You need to create a correct ovirt.ini file in your home\
                   directory.Check documentation"
-ERR_NOCOBBLERFILE = "You need to create a correct cobbler.ini file in your\
-                    home directory.Check documentation"
-ERR_NOFOREMANFILE = "You need to create a correct foreman.ini file in your\
-                    home directory.Check documentation"
 ERR_CLIENTNOTFOUND = "Client not found"
 ERR_CLIENTNOCONF = "Client not found in conf file"
 ERR_CLIENTNOPROFILE = "Missing client file in your home directory.\
                       Check documentation"
 
-usage = "script to create virtual machines on ovirt/rhev"
-version = "1.8"
+usage = "script to interact with ovirt/rhev"
+version = "1.2.9"
 parser = optparse.OptionParser(
     "Usage: %prog [options] vmname", version=version)
 creationgroup = optparse.OptionGroup(parser, "Creation options")
@@ -555,7 +550,7 @@ if cobbler and client:
         if not dns and 'dns' in cobblers[client].keys():
             dns = cobblers[client]['dns']
     except:
-        print ERR_NOCOBBLERFILE
+        print "Cobbler file not found"
         print "Client:%s" % client
         os._exit(1)
 
@@ -582,7 +577,7 @@ if foreman and client:
                 foremansecure = simplejson.loads(
                     foremans[client]['secure'].lower())
             except:
-                foremansecure = false
+                foremansecure = False
         else:
             foremansecure = False
         if 'build' in foremans[client].keys():
@@ -590,7 +585,7 @@ if foreman and client:
                 foremanbuild = simplejson.loads(
                     foremans[client]['build'].lower())
             except:
-                foremanbuild = false
+                foremanbuild = False
         else:
             foremansecure = False
         if 'user' in foremans[client].keys():
