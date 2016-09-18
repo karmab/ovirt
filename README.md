@@ -4,7 +4,7 @@
 [![Code Climate](https://codeclimate.com/github/karmab/ovirt/badges/gpa.svg)](https://codeclimate.com/github/karmab/ovirt)
 [![Pypi](http://img.shields.io/pypi/v/ovirt.svg)](https://pypi.python.org/pypi/ovirt/)
 
-This script allows creation/stop/start/runonce/console/add disk or iso/migrate/deploy/listing from template/add tags,... for ovirt/rhev-m virtual machines ( plus creation in cobbler for pxe installs) in a multi-client way
+This script allows creation/stop/start/runonce/console/add disk or iso/migrate/deploy/listing from template/add tags,... for ovirt/rhev-m virtual machines in a multi-client way
 
 ##Requisites
 
@@ -12,14 +12,13 @@ This script allows creation/stop/start/runonce/console/add disk or iso/migrate/d
 - python-requests rpm 
 - python-prettytable rpm
 - ovirt.ini file in your home directory or in same directory as program (look at sample for syntax)
-- a client.ini (for instance nyse.ini) in your home directory for every client you want to manage.This file will contain profiles (disksize,number of network interfaces and type,...) used when creating machines (and also by cobbler if you have a cobbler setup) (look at sample for syntax)
+- a client.ini (for instance nyse.ini) in your home directory for every client you want to manage.This file will contain profiles (disksize,number of network interfaces and type,...) used when creating machines (look at sample for syntax)
 
 ##Contents
 
 -    `README.txt` this file
 -    `ovirt.py`  start/stop/migrate/creates/deletes virtual machines in ovirt/rhev-m of several clients
 -    `hypervisor.py` start/stop/get console of virtual machines connecting directly to the hypervisor (usefull when manager is down) 
--    `foreman.py`  class used by ovirt.py for foreman support. can also be used on its own
 
 ##Typical uses
      
@@ -31,8 +30,6 @@ This script allows creation/stop/start/runonce/console/add disk or iso/migrate/d
     -    `ovirt.py -o hendrix`
 -    START A VM KIPA02 DIRECTLY THROUGH THE HYPERVISOR WITH 
     -    `hypervisor.py -T ~/vdsm_certs -H 192.168.6.1 -s kipa02`
--    CREATE THE MACHINE DIRECTLY IN FOREMAN (specifying foremanip, name and dns of the vm, the hostgroup and compute resource to use,and build mode)
-    -    `foreman.py -H  192.168.8.223 -n satriani -d xxx.org -X base6 -b -c bumblefoot`
 
 ##Problems?
 

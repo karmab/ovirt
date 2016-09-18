@@ -3,12 +3,9 @@
 script to create virtual machines on ovirt/rhev
 """
 
-from foreman import Foreman
-import xmlrpclib
 import optparse
 import os
 from prettytable import PrettyTable
-import simplejson
 import sys
 import time
 import ConfigParser
@@ -20,7 +17,7 @@ from yaml import dump, load
 __author__ = "Karim Boumedhel"
 __credits__ = ["Karim Boumedhel"]
 __license__ = "GPL"
-__version__ = "1.2.9"
+__version__ = "1.2.11"
 __maintainer__ = "Karim Boumedhel"
 __email__ = "karim.boumedhel@gmail.com"
 __status__ = "Production"
@@ -33,7 +30,7 @@ ERR_CLIENTNOPROFILE = "Missing client file in your home directory.\
                       Check documentation"
 
 usage = "script to interact with ovirt/rhev"
-version = "1.2.9"
+version = "1.2.11"
 parser = optparse.OptionParser(
     "Usage: %prog [options] vmname", version=version)
 creationgroup = optparse.OptionGroup(parser, "Creation options")
@@ -148,29 +145,13 @@ listinggroup.add_option('-V', '--listvms', dest='listvms', action='store_true',
                         help='list all vms,along with their status and their ip')
 parser.add_option_group(listinggroup)
 
-cobblergroup = optparse.OptionGroup(parser, "Cobbler options")
-cobblergroup.add_option("-Z", "--cobbler", dest="cobbler",
-                        action="store_true", help="Cobbler support")
-cobblergroup.add_option("-1", "--ip1", dest="ip1",
-                        type="string", help="Specify First IP")
-cobblergroup.add_option("-2", "--ip2", dest="ip2",
-                        type="string", help="Specify Second IP")
-cobblergroup.add_option("-3", "--ip3", dest="ip3",
-                        type="string", help="Specify Third IP")
-cobblergroup.add_option("-4", "--ip4", dest="ip4",
-                        type="string", help="Specify Fourth IP")
-cobblergroup.add_option("-J", "--dns", dest="dns",
-                        type="string", help="Dns domain")
-parser.add_option_group(cobblergroup)
-
-foremangroup = optparse.OptionGroup(parser, "Foreman options")
-foremangroup.add_option("-F", "--foreman", dest="foreman",
-                        action="store_true", help="Foreman support")
-foremangroup.add_option("--hostgroup", dest="hostgroup",
-                        type="string", help="Foreman hostgroup")
-foremangroup.add_option("--puppetclasses", dest="puppetclasses",
-                        type="string", help="Puppet classes to add to host, separated by ,")
-parser.add_option_group(foremangroup)
+ipgroup = optparse.OptionGroup(parser, 'Ip options')
+ipgroup.add_option("-1", "--ip1", dest="ip1", type="string", help="Specify First IP")
+ipgroup.add_option("-2", "--ip2", dest="ip2", type="string", help="Specify Second IP")
+ipgroup.add_option("-3", "--ip3", dest="ip3", type="string", help="Specify Third IP")
+ipgroup.add_option("-4", "--ip4", dest="ip4", type="string", help="Specify Fourth IP")
+ipgroup.add_option("-J", "--dns", dest="dns", type="string", help="Dns domain")
+parser.add_option_group(ipgroup)
 
 parser.add_option('-v', '--debug', dest='debug',
                   default=False, action='store_true', help='Debug')
@@ -212,8 +193,6 @@ listvms = options.listvms
 listprofiles = options.listprofiles
 debug = options.debug
 new = options.new
-cobbleruser = None
-cobblermac = None
 diskformat = options.diskformat
 disksize2 = options.disksize2
 if disksize2:
@@ -254,7 +233,6 @@ if adddisk:
     adddisk = adddisk * GB
 bad = options.bad
 cobbler = options.cobbler
-foreman = options.foreman
 nolaunch = options.nolaunch
 search = options.search
 profile = options.profile
@@ -291,9 +269,6 @@ guestwindows2003 = "windows_2003"
 guestwindows200364 = "windows_2003x64"
 guestwindows2008 = "windows_2008"
 guestwindows200864 = "windows_2008x64"
-foremanos, foremanenv, foremanarch, foremanpuppet, foremanptable = None, None, None, None, None
-hostgroup = options.hostgroup
-puppetclasses = options.puppetclasses
 rootpw = options.rootpw
 net = options.net
 
@@ -520,97 +495,6 @@ try:
 except KeyError, e:
     print "Problem parsing ovirt ini file:Missing parameter %s" % e
     os._exit(1)
-
-# TODO:check necessary parameters exist for a valid ovirt connection or exits
-# if not ohost or not oport or not ouser or not opassword or not ossl or not clu or not numcpu or not diskformat or not disksize or not memory or not storagedomain or not numinterfaces:
-# print "Missing parameters for ovirt"
-# sys.exit(1)
-
-# parse cobbler client auth file
-if cobbler and client:
-    cobblerconffile = "%s/cobbler.ini" % (os.environ['HOME'])
-    if not os.path.exists(cobblerconffile):
-        print "Missing %s in your  home directory.Check documentation" % cobblerconffile
-        sys.exit(1)
-    try:
-        c = ConfigParser.ConfigParser()
-        c.read(cobblerconffile)
-        cobblers = {}
-        for cli in c.sections():
-            for option in c.options(cli):
-                if cli not in cobblers.keys():
-                    cobblers[cli] = {option: c.get(cli, option)}
-                else:
-                    cobblers[cli][option] = c.get(cli, option)
-        cobblerhost = cobblers[client]['host']
-        cobbleruser = cobblers[client]['user']
-        cobblerpassword = cobblers[client]['password']
-        if 'mac' in cobblers[client].keys():
-            cobblermac = cobblers[client]['mac']
-        if not dns and 'dns' in cobblers[client].keys():
-            dns = cobblers[client]['dns']
-    except:
-        print "Cobbler file not found"
-        print "Client:%s" % client
-        os._exit(1)
-
-# parse foreman client auth file
-if foreman and client:
-    foremanconffile = "%s/foreman.ini" % (os.environ['HOME'])
-    if not os.path.exists(foremanconffile):
-        print "Missing %s in your  home directory.Check documentation" % foremanconffile
-        sys.exit(1)
-    try:
-        c = ConfigParser.ConfigParser()
-        c.read(foremanconffile)
-        foremans = {}
-        for cli in c.sections():
-            for option in c.options(cli):
-                if cli not in foremans.keys():
-                    foremans[cli] = {option: c.get(cli, option)}
-                else:
-                    foremans[cli][option] = c.get(cli, option)
-        foremanhost = foremans[client]['host']
-        foremanport = foremans[client]['port']
-        if 'secure' in foremans[client].keys():
-            try:
-                foremansecure = simplejson.loads(
-                    foremans[client]['secure'].lower())
-            except:
-                foremansecure = False
-        else:
-            foremansecure = False
-        if 'build' in foremans[client].keys():
-            try:
-                foremanbuild = simplejson.loads(
-                    foremans[client]['build'].lower())
-            except:
-                foremanbuild = False
-        else:
-            foremansecure = False
-        if 'user' in foremans[client].keys():
-            foremanuser = foremans[client]['user']
-        if 'password' in foremans[client].keys():
-            foremanpassword = foremans[client]['password']
-        if 'mac' in foremans[client].keys():
-            foremanmac = foremans[client]['mac']
-        if 'os' in foremans[client].keys():
-            foremanos = foremans[client]['os']
-        if 'env' in foremans[client].keys():
-            foremanenv = foremans[client]['env']
-        if 'arch' in foremans[client].keys():
-            foremanarch = foremans[client]['arch']
-        if 'puppet' in foremans[client].keys():
-            foremanpuppet = foremans[client]['puppet']
-        if 'ptable' in foremans[client].keys():
-            foremanptable = foremans[client]['ptable']
-        if not dns and 'dns' in foremans[client].keys():
-            dns = foremans[client]['dns']
-    except KeyError, e:
-        print "Problem parsing foreman ini file:Missing parameter %s" % e
-        print "Client:%s" % client
-        os._exit(1)
-
 
 if ossl:
     url = "https://%s:%s/ovirt-engine/api" % (ohost, oport)
@@ -864,20 +748,6 @@ if template:
 if len(args) == 1 and not new:
     name = args[0]
     vm = api.vms.get(name=name)
-    if kill and foreman:
-        f = Foreman(foremanhost, foremanport, foremanuser,
-                    foremanpassword, foremansecure)
-        f.delete(name, dns)
-    if kill and cobbler:
-        s = xmlrpclib.Server("http://%s/cobbler_api" % cobblerhost)
-        token = s.login(cobbleruser, cobblerpassword)
-        system = s.find_system({"name": name})
-        if system == []:
-            print "Nothing to do in cobbler"
-        else:
-            s.remove_system(name, token)
-            s.sync(token)
-            print "%s successfully killed in %s" % (name, cobblerhost)
     if not vm:
         print "Vm %s not found in %s" % (name, client)
         sys.exit(1)
@@ -1336,14 +1206,6 @@ if len(args) == 1:
     name = args[0]
 if not name:
     name = raw_input("enter machine s name:\n")
-if cobbler:
-    s = xmlrpclib.Server("http://%s/cobbler_api" % cobblerhost)
-    token = s.login(cobbleruser, cobblerpassword)
-    system = s.find_system({"name": name})
-    if system != []:
-        print "%s already defined in cobbler...Use the following command if you plan to reinstall this machine:" % (name)
-        print "%s -ZK %s -C %s" % (sys.argv[0], name, client)
-        sys.exit(0)
 
 if not profile:
     print 'Choose a profile for your machine:'
@@ -1387,16 +1249,12 @@ if not cmdline and 'cmdline' in profiles[profile].keys():
     cmdline = profiles[profile]['cmdline']
 if not runonce and 'runonce' in profiles[profile].keys():
     runonce = True
-if not hostgroup and 'hostgroup' in profiles[profile].keys():
-    hostgroup = profiles[profile]["hostgroup"]
 if 'dns' in profiles[profile].keys():
     dns = profiles[profile]['dns']
 if 'memory' in profiles[profile].keys():
     memory = int(profiles[profile]['memory']) * MB
 if 'numcpu' in profiles[profile].keys():
     numcpu = int(profiles[profile]['numcpu'])
-if not puppetclasses and 'puppetclasses' in profiles[profile].keys():
-    puppetclasses = profiles[profile]['puppetclasses']
 
 if extra:
     cmdline = "%s %s" % (cmdline, extra)
@@ -1548,166 +1406,6 @@ while not api.vms.get(name).disks.get(id=disk1id):
     time.sleep(2)
 api.vms.get(name).disks.get(id=disk1id).activate()
 print "VM %s created in ovirt" % name
-if cobbler or foreman:
-    vm = api.vms.get(name=name)
-    for nic in vm.nics.list():
-        macaddr.append(nic.mac.address)
-
-# VM CREATION IN COBBLER
-# grab ips and extra routes for cobbler
-
-if cobbler:
-    gwstatic, gwbackup, staticroutes, backuproutes = None, None, None, None
-    gateway = None
-    if 'nextserver' in profiles[profile].keys():
-        nextserver = profiles[profile]['nextserver']
-    if 'gwbackup' in profiles[profile].keys():
-        gwbackup = profiles[profile]['gwbackup']
-    if 'gwstatic' in profiles[profile].keys():
-        gwstatic = profiles[profile]['gwstatic']
-    if 'staticroutes' in profiles[profile].keys():
-        staticroutes = profiles[profile]['staticroutes']
-    if 'subnet1' in profiles[profile].keys():
-        subnet1 = profiles[profile]['subnet1']
-    if 'subnet2' in profiles[profile].keys():
-        subnet2 = profiles[profile]['subnet2']
-    if 'subnet3' in profiles[profile].keys():
-        subnet3 = profiles[profile]['subnet3']
-    if 'subnet4' in profiles[profile].keys():
-        subnet4 = profiles[profile]['subnet4']
-    if 'gateway' in profiles[profile].keys():
-        gateway = profiles[profile]['gateway']
-    if numinterfaces == 1:
-        if not subnet1:
-            print "Missing subnet in client ini file.Check documentation"
-            sys.exit(1)
-        if not ip1:
-            ip1 = raw_input("Enter first ip:\n")
-    elif numinterfaces == 2:
-        if not subnet1 or not subnet2:
-            print "Missing subnet in client ini file.Check documentation"
-            sys.exit(1)
-        if not ip1:
-            ip1 = raw_input("Enter first ip:\n")
-        if not ip2:
-            ip2 = raw_input("Enter second ip:\n")
-    # cluster machines
-    elif numinterfaces == 3:
-        if not subnet1 or not subnet2 or not subnet3:
-            print "Missing subnet in client ini file.Check documentation"
-            sys.exit(1)
-        if not ip1:
-            ip1 = raw_input("Enter first service ip:\n")
-        if not ip2:
-            ip2 = raw_input("Enter second ip:\n")
-        if not ip3:
-            ip3 = raw_input("Enter third ip:\n")
-    # cluster machines
-    elif numinterfaces == 4:
-        if not subnet1 or not subnet2 or not subnet3 or not subnet4:
-            print "Missing subnet in client ini file.Check documentation"
-            sys.exit(1)
-        if not ip1:
-            ip1 = raw_input("Enter first service ip:\n")
-        if not ip2:
-            ip2 = raw_input("Enter second ip:\n")
-        if not ip3:
-            ip3 = raw_input("Enter third ip:\n")
-        if not ip4:
-            ip4 = raw_input("Enter fourth ip:\n")
-    if gwstatic and staticroutes:
-        staticroutes = staticroutes.replace(
-            ",", ":%s " % gwstatic) + ":" + gwstatic
-    if gwbackup and backuproutes:
-        backuproutes = backuproutes.replace(
-            ",", ":%s " % gwbackup) + ":" + gwbackup
-        staticroutes = "%s %s" % (staticroutes, backuproutes)
-
-    # 3-create cobbler system
-    system = s.new_system(token)
-    s.modify_system(system, 'name', name, token)
-    s.modify_system(system, 'hostname', name, token)
-    s.modify_system(system, 'profile', profile, token)
-    # if nextserver:
-    # s.modify_system(system, 'server', nextserver, token)
-    if numinterfaces == 1:
-        if staticroutes:
-            eth0 = {"macaddress-eth0": macaddr[0], "static-eth0": 1, "ipaddress-eth0": ip1,
-                    "subnet-eth0": subnet1, "staticroutes-eth0": staticroutes}
-        else:
-            eth0 = {"macaddress-eth0": macaddr[0], "static-eth0": 1,
-                    "ipaddress-eth0": ip1, "subnet-eth0": subnet1}
-        if dns:
-            eth0["dnsname-eth0"] = "%s.%s" % (name, dns)
-        s.modify_system(system, 'modify_interface', eth0, token)
-    elif numinterfaces == 2:
-        eth0 = {"macaddress-eth0": macaddr[0], "static-eth0": 1,
-                "ipaddress-eth0": ip1, "subnet-eth0": subnet1}
-        if dns:
-            eth0["dnsname-eth0"] = "%s.%s" % (name, dns)
-        if staticroutes:
-            eth1 = {"macaddress-eth1": macaddr[1], "static-eth1": 1, "ipaddress-eth1": ip2,
-                    "subnet-eth1": subnet2, "staticroutes-eth1": staticroutes}
-        else:
-            eth1 = {"macaddress-eth1": macaddr[1], "static-eth1": 1,
-                    "ipaddress-eth1": ip2, "subnet-eth1": subnet2}
-        s.modify_system(system, 'modify_interface', eth0, token)
-        s.modify_system(system, 'modify_interface', eth1, token)
-    elif numinterfaces == 3:
-        eth0 = {"macaddress-eth0": macaddr[0], "static-eth0": 1,
-                "ipaddress-eth0": ip1, "subnet-eth0": subnet1}
-        if dns:
-            eth0["dnsname-eth0"] = "%s.%s" % (name, dns)
-        if staticroutes:
-            eth1 = {"macaddress-eth1": macaddr[1], "static-eth1": 1, "ipaddress-eth1": ip2,
-                    "subnet-eth1": subnet2, "staticroutes-eth1": staticroutes}
-        else:
-            eth1 = {"macaddress-eth1": macaddr[1], "static-eth1": 1,
-                    "ipaddress-eth1": ip2, "subnet-eth1": subnet2}
-        eth2 = {"macaddress-eth2": macaddr[2], "static-eth2": 1,
-                "ipaddress-eth2": ip3, "subnet-eth2": subnet3}
-        s.modify_system(system, 'modify_interface', eth0, token)
-        s.modify_system(system, 'modify_interface', eth1, token)
-        s.modify_system(system, 'modify_interface', eth2, token)
-    elif numinterfaces == 4:
-        eth0 = {"macaddress-eth0": macaddr[0], "static-eth0": 1,
-                "ipaddress-eth0": ip1, "subnet-eth0": subnet1}
-        if dns:
-            eth0["dnsname-eth0"] = "%s.%s" % (name, dns)
-        if staticroutes:
-            eth1 = {"macaddress-eth1": macaddr[1], "static-eth1": 1, "ipaddress-eth1": ip2,
-                    "subnet-eth1": subnet2, "staticroutes-eth1": staticroutes}
-        else:
-            eth1 = {"macaddress-eth1": macaddr[1], "static-eth1": 1,
-                    "ipaddress-eth1": ip2, "subnet-eth1": subnet2}
-        eth2 = {"macaddress-eth2": macaddr[2], "static-eth2": 1,
-                "ipaddress-eth2": ip3, "subnet-eth2": subnet3}
-        eth3 = {"macaddress-eth3": macaddr[3], "static-eth3": 1,
-                "ipaddress-eth3": ip4, "subnet-eth3": subnet4}
-        s.modify_system(system, 'modify_interface', eth0, token)
-        s.modify_system(system, 'modify_interface', eth1, token)
-        s.modify_system(system, 'modify_interface', eth2, token)
-        s.modify_system(system, 'modify_interface', eth3, token)
-    if gateway:
-        s.modify_system(system, 'gateway', gateway, token)
-    # if ksopts:
-    #   s.modify_system(system,"kernel_options", ksopts, token)
-    if cmdline:
-        s.modify_system(system, "ks_meta", cmdline, token)
-
-    s.save_system(system, token)
-    s.sync(token)
-    print "VM %s created in cobbler" % name
-
-
-# VM CREATION IN FOREMAN
-if foreman:
-    f = Foreman(foremanhost, foremanport, foremanuser,
-                foremanpassword, foremansecure)
-    f.create(name=name, dns=dns, ip=ip1, mac=macaddr[0], operatingsystem=foremanos, environment=foremanenv,
-             arch=foremanarch, puppet=foremanpuppet, ptable=foremanptable, hostgroup=hostgroup, build=foremanbuild)
-if foreman and puppetclasses:
-    f.addclasses(name=name, dns=dns, classes=puppetclasses)
 
 if nolaunch and runonce:
     print "Both runonce and nolaunch specified for VM...nonsense!"
