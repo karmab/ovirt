@@ -17,7 +17,7 @@ from yaml import dump, load
 __author__ = "Karim Boumedhel"
 __credits__ = ["Karim Boumedhel"]
 __license__ = "GPL"
-__version__ = "1.2.12"
+__version__ = "1.2.13"
 __maintainer__ = "Karim Boumedhel"
 __email__ = "karim.boumedhel@gmail.com"
 __status__ = "Production"
@@ -30,7 +30,7 @@ ERR_CLIENTNOPROFILE = "Missing client file in your home directory.\
                       Check documentation"
 
 usage = "script to interact with ovirt/rhev"
-version = "1.2.12"
+version = "1.2.13"
 parser = optparse.OptionParser(
     "Usage: %prog [options] vmname", version=version)
 creationgroup = optparse.OptionGroup(parser, "Creation options")
@@ -105,7 +105,7 @@ actiongroup.add_option("-z", "--cmdline", dest="cmdline",
 actiongroup.add_option("-B", "--boot", dest="boot", type="string",
                        help="Specify Boot sequence,using two values separated by colons.Values can be hd,network,cdrom.If you only provivde one options, second boot option will be set to None")
 actiongroup.add_option("-K", "--kill", dest="kill", action="store_true",
-                       help="specify VM to kill in virtual center.Confirmation will be asked unless -F/--forcekill flag is set.VM will also be killed in cobbler server if -Z/-cobbler flag set")
+                       help="specify VM to kill in virtual center.Confirmation will be asked unless -F/--forcekill flag is set")
 actiongroup.add_option('-Q', '--forcekill', dest='forcekill',
                        action='store_true', help='Dont ask confirmation when killing a VM')
 actiongroup.add_option('-5', '--template', dest='template',
@@ -232,7 +232,6 @@ adddisk = options.adddisk
 if adddisk:
     adddisk = adddisk * GB
 bad = options.bad
-cobbler = options.cobbler
 nolaunch = options.nolaunch
 search = options.search
 profile = options.profile
