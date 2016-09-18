@@ -17,7 +17,7 @@ from yaml import dump, load
 __author__ = "Karim Boumedhel"
 __credits__ = ["Karim Boumedhel"]
 __license__ = "GPL"
-__version__ = "1.2.11"
+__version__ = "1.2.12"
 __maintainer__ = "Karim Boumedhel"
 __email__ = "karim.boumedhel@gmail.com"
 __status__ = "Production"
@@ -30,7 +30,7 @@ ERR_CLIENTNOPROFILE = "Missing client file in your home directory.\
                       Check documentation"
 
 usage = "script to interact with ovirt/rhev"
-version = "1.2.11"
+version = "1.2.12"
 parser = optparse.OptionParser(
     "Usage: %prog [options] vmname", version=version)
 creationgroup = optparse.OptionGroup(parser, "Creation options")
