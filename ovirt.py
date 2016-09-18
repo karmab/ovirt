@@ -1066,7 +1066,7 @@ if len(args) == 1 and not new:
             print "Waiting for machine to be up..."
             time.sleep(5)
         if not oca or not os.path.exists(oca):
-            print " CA cert file is required in order to connect to console.Get it from http://${OVIRT}/ca.crt, keep only the CERTIFICATE part and define its path in ovirt.ini"
+            print " CA cert file is required in order to connect to console.Get it from http://${OVIRT}/ca.crt, keep only the CERTIFICATE part and define its path in ovirt.ini. for ovirt4, use https://${OVIRT}/ovirt-engine/services/pki-resource?resource=ca-certificate&format=X509-PEM-CA"
             sys.exit(1)
         if not oorg:
             print "Define your org in ovirt.ini"
